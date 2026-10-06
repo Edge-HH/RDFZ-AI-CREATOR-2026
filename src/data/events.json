@@ -1,0 +1,102 @@
+[
+  {
+    "id": "capsule-scan",
+    "title": "运输舱低温记录恢复",
+    "trigger": "选择暂停扫描运输舱",
+    "message": "缺失的温度段不是空白，而是一次短暂的热冲击。扫描把它标记为可控偏差。",
+    "severity": "info",
+    "mitigatedBy": ["prologue-scan"]
+  },
+  {
+    "id": "depart-with-uncertainty",
+    "title": "移动扫描进入盲区",
+    "trigger": "未完成低温扫描便离站",
+    "message": "移动震动扩大了校准区间。你能带着芯出发，但不能再假装数据完整。",
+    "severity": "warning",
+    "mitigatedBy": ["prologue-scan"]
+  },
+  {
+    "id": "south-anchor",
+    "title": "冰架错层",
+    "trigger": "选择南坡冰脊",
+    "message": "冰架像慢速的断层一样错开。锚索把车头留在可回收的一侧。",
+    "severity": "warning",
+    "mitigatedBy": [
+      "route-south-anchor",
+      "ice-anchor-fallback",
+      "ice-drone-scan"
+    ]
+  },
+  {
+    "id": "south-direct",
+    "title": "轮组冲击峰值",
+    "trigger": "南坡直接通过且未布锚",
+    "message": "车体越过错层，外部锁扣的温度和应力同时越线。没有人掉下去，但下一次维护不会免费。",
+    "severity": "danger",
+    "mitigatedBy": ["route-south-anchor", "ice-drone-scan"]
+  },
+  {
+    "id": "steam-relay",
+    "title": "地热蒸汽遮蔽通信",
+    "trigger": "进入西侧地热沟",
+    "message": "蒸汽把光学链路切成几段。备用中继能拼回一张图，却要从车队电池里取电。",
+    "severity": "warning",
+    "mitigatedBy": ["steam-relay", "steam-old-tunnel"]
+  },
+  {
+    "id": "precalibrate-skip",
+    "title": "塔端固件校验位不兼容",
+    "trigger": "跳过低温预校准",
+    "message": "点火芯读数与旧固件只差一位。差异很小，足以把失超预警推到塔下。",
+    "severity": "danger",
+    "mitigatedBy": ["relay-calibrate-stop", "relay-calibrate-moving"]
+  },
+  {
+    "id": "safe-restart",
+    "title": "磁约束腔降功率复位",
+    "trigger": "选择泄压净化后降功率重启",
+    "message": "高热区被隔离，净化曲线落入绿区。塔的第一束推力不会很强，但它在听你的指令。",
+    "severity": "info",
+    "mitigatedBy": ["mount-purge-safe", "mount-remote-align"]
+  },
+  {
+    "id": "bypass-ignition",
+    "title": "旁路点火",
+    "trigger": "选择旁路直连点火",
+    "message": "旁路夹具咬住接口，推力曲线先跳后稳。所有人的生理监测都在红线附近。",
+    "severity": "danger",
+    "mitigatedBy": ["mount-purge-safe", "mount-remote-align"]
+  },
+  {
+    "id": "remote-align",
+    "title": "远程机械臂完成第一轮对齐",
+    "trigger": "中继在线且选择远程分工",
+    "message": "无人机在高磁扰边缘替人读完第一组相位差。你们获得了几分钟，也失去了一点设备耐久。",
+    "severity": "info",
+    "mitigatedBy": ["steam-relay", "mount-remote-align"]
+  },
+  {
+    "id": "stable-ignition",
+    "title": "环弧—7 稳态点火",
+    "trigger": "投入全部冷却芯",
+    "message": "推进塔以降功率重新接入网络。白弧盆地的地平线出现一条很细的蓝线。",
+    "severity": "success",
+    "mitigatedBy": ["ignition-all-cooling"]
+  },
+  {
+    "id": "partial-ignition",
+    "title": "保留冷却芯的低功率点火",
+    "trigger": "保留一半冷却芯",
+    "message": "塔亮了，但输出低于计划。下一座塔的补给窗口被保留下来，也把压力留了下来。",
+    "severity": "warning",
+    "mitigatedBy": ["ignition-reserve-next"]
+  },
+  {
+    "id": "crew-first-delay",
+    "title": "队员撤出高磁扰区",
+    "trigger": "为队员安全延迟点火",
+    "message": "控制台等待了一个完整的热循环。没有人被写成系统误差，塔的灯在低功率下重新亮起。",
+    "severity": "info",
+    "mitigatedBy": ["ignition-delay-crew"]
+  }
+]

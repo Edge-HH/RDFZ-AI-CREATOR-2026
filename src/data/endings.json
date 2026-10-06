@@ -1,0 +1,30 @@
+[
+  {
+    "id": "steady-migration",
+    "title": "稳态迁移",
+    "tone": "success",
+    "summary": "环弧—7 以降功率稳定重启。你们把每个代价写进记录，也把下一次窗口留给了后来的人。",
+    "requirements": ["engineStability>=75", "crew>=4", "safety>=45", "time>0"]
+  },
+  {
+    "id": "scarred-continuation",
+    "title": "带伤续航",
+    "tone": "mixed",
+    "summary": "推力恢复了，但队伍带着伤和空掉的物资继续向下一座塔移动。成功没有抹掉代价。",
+    "requirements": ["engineStability>=60", "crew>=3"]
+  },
+  {
+    "id": "cold-start-success",
+    "title": "冷启动成功",
+    "tone": "danger",
+    "summary": "旁路点火把推力拉回来了。控制台亮起的同时，安全裕度和团队信任落进红区。",
+    "requirements": ["engineStability>=75", "safety<35", "crew>=3"]
+  },
+  {
+    "id": "silent-lamp",
+    "title": "静默灯",
+    "tone": "failure",
+    "summary": "塔没有点火。车队保住了大部分人和维修记录，下一次任务仍然有机会。",
+    "requirements": ["engineStability<60", "time<=0", "crew<3"]
+  }
+]

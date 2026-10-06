@@ -1,0 +1,994 @@
+[
+  {
+    "id": "prologue-scan",
+    "sceneId": "prologue",
+    "label": "暂停扫描运输舱",
+    "intent": "先把缺失的低温记录补齐，再让车队离站。",
+    "preview": "时间 -8 分钟；通信置信度 +10；校准信息可靠。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -8,
+        "reason": "低温扫描耗时 8 分钟，运输舱的热冲击区间被重新标定。"
+      },
+      {
+        "key": "commsConfidence",
+        "amount": 10,
+        "reason": "扫描报告让塔区值守重新开放了校准数据。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "scanComplete",
+        "value": true
+      }
+    ],
+    "next": "loadout",
+    "eventId": "capsule-scan"
+  },
+  {
+    "id": "prologue-depart",
+    "sceneId": "prologue",
+    "label": "装舱，边走边测",
+    "intent": "不把窗口浪费在一份不完整的记录上。",
+    "preview": "时间不变；能源 -4；安全 -4；后续风险区间扩大。",
+    "effects": [
+      {
+        "key": "energy",
+        "amount": -4,
+        "reason": "移动中维持扫描探头，备用电池先消耗了一格。"
+      },
+      {
+        "key": "safety",
+        "amount": -4,
+        "reason": "未完成检查就离站，车队对点火芯状态缺乏缓冲。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "scanComplete",
+        "value": false
+      }
+    ],
+    "next": "loadout",
+    "eventId": "depart-with-uncertainty"
+  },
+  {
+    "id": "prologue-question",
+    "sceneId": "prologue",
+    "label": "先问塔区：为何缺了一段记录？",
+    "intent": "把信息缺口写进任务记录，要求值守端承担解释。",
+    "preview": "时间 -5 分钟；团队信任 +5；获得塔端披露。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -5,
+        "reason": "频道交涉消耗 5 分钟，但缺失记录被正式挂单。"
+      },
+      {
+        "key": "trust",
+        "amount": 5,
+        "reason": "你没有把异常归咎给任何一个队员，频道里的回答变得更完整。"
+      },
+      {
+        "key": "commsConfidence",
+        "amount": 4
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "towerDisclosure",
+        "value": true
+      }
+    ],
+    "next": "loadout",
+    "eventId": "tower-disclosure"
+  },
+  {
+    "id": "loadout-cooling",
+    "sceneId": "loadout",
+    "label": "装载备用冷却桶",
+    "intent": "让塔下重启拥有更多热管理余量。",
+    "preview": "物资 -8；能源 -6；发动机稳定度 +12。",
+    "effects": [
+      {
+        "key": "supplies",
+        "amount": -8,
+        "reason": "冷却桶占据了装载空间，医疗与锚索只能从剩余槽位调配。"
+      },
+      {
+        "key": "energy",
+        "amount": -6,
+        "reason": "额外冷却质量让车队在起步段消耗更多能源。"
+      },
+      {
+        "key": "engineStability",
+        "amount": 12,
+        "reason": "备用冷却桶让塔下热交换有了安全冗余。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "loadCooling",
+        "value": true
+      }
+    ],
+    "next": "route",
+    "eventId": "load-cooling"
+  },
+  {
+    "id": "loadout-battery",
+    "sceneId": "loadout",
+    "label": "装载加大电池包",
+    "intent": "把路线自由度留给车队，接受塔下热管理变紧。",
+    "preview": "能源 +18（容量 120）；物资 -10；安全 -5。",
+    "effects": [
+      {
+        "key": "energy",
+        "amount": 18,
+        "reason": "加大电池包补回了长坡段的驱动余量。"
+      },
+      {
+        "key": "supplies",
+        "amount": -10,
+        "reason": "电池占用货位，维修物资与冷却桶被迫减量。"
+      },
+      {
+        "key": "safety",
+        "amount": -5,
+        "reason": "塔下缺少缓冲物资，现场处置空间变窄。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "loadBattery",
+        "value": true
+      }
+    ],
+    "next": "route",
+    "eventId": "load-battery"
+  },
+  {
+    "id": "loadout-anchor",
+    "sceneId": "loadout",
+    "label": "装载医疗包与锚索",
+    "intent": "优先保留人员和车体在冰脊上的可撤退能力。",
+    "preview": "物资 -10；安全 +8；受伤时仍能维持队形。",
+    "effects": [
+      {
+        "key": "supplies",
+        "amount": -10,
+        "reason": "锚索和医疗包填满了货舱，塔下冷却冗余减少。"
+      },
+      {
+        "key": "safety",
+        "amount": 8,
+        "reason": "队员能在裂缝段固定车体并处理冻伤。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "loadAnchors",
+        "value": true
+      }
+    ],
+    "next": "route",
+    "eventId": "load-anchors"
+  },
+  {
+    "id": "route-select-south",
+    "sceneId": "route",
+    "label": "南坡冰脊：短线切入",
+    "intent": "把路线押在更短的距离和更高的坡度上。",
+    "requires": ["route:south"],
+    "preview": "时间 -90 分钟；能源 -10；安全 -8；进入冰架事件。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -90,
+        "reason": "南坡距离短，车队在冰架封口前抢出一个窗口。"
+      },
+      {
+        "key": "energy",
+        "amount": -10
+      },
+      {
+        "key": "safety",
+        "amount": -8,
+        "reason": "高坡度和侧风把安全裕度压低。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "routeSouth",
+        "value": true
+      }
+    ],
+    "next": "ice-event",
+    "eventId": "select-south"
+  },
+  {
+    "id": "route-select-west",
+    "sceneId": "route",
+    "label": "西侧地热沟：缓坡绕行",
+    "intent": "用更长距离换取较低的侧翻风险。",
+    "requires": ["route:west"],
+    "preview": "时间 -150 分钟；能源 -12；安全 +2；进入蒸汽事件。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -150,
+        "reason": "西侧地热沟绕行更长，但车辆不必爬上冰脊。"
+      },
+      {
+        "key": "energy",
+        "amount": -12
+      },
+      {
+        "key": "safety",
+        "amount": 2,
+        "reason": "缓坡让车体保持稳定，蒸汽风险留给传感器。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "routeWest",
+        "value": true
+      }
+    ],
+    "next": "steam-event",
+    "eventId": "select-west"
+  },
+  {
+    "id": "ice-anchor-fallback",
+    "sceneId": "ice-event",
+    "label": "把剩余锚索打进冰架",
+    "intent": "先把车体停住，再处理错层带来的震动。",
+    "requires": ["flag:routeSouth", "flag:loadAnchors"],
+    "preview": "时间 -24 分钟；物资 -4；安全 +5。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -24,
+        "reason": "冰架错层，车队停下等待应力释放。"
+      },
+      {
+        "key": "supplies",
+        "amount": -4
+      },
+      {
+        "key": "safety",
+        "amount": 5,
+        "reason": "备用锚点锁住了车头，避免第二次侧滑。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "iceMitigated",
+        "value": true
+      }
+    ],
+    "next": "relay",
+    "eventId": "ice-anchor-fallback"
+  },
+  {
+    "id": "ice-drone-scan",
+    "sceneId": "ice-event",
+    "label": "让无人机先探路",
+    "intent": "用电量换一张不会把裂缝藏起来的地形图。",
+    "requires": ["flag:routeSouth", "energy>=8"],
+    "preview": "时间 -18 分钟；能源 -8；安全 +5；通信置信度 +8。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -18,
+        "reason": "无人机升空扫描错层边缘，等待数据回传。"
+      },
+      {
+        "key": "energy",
+        "amount": -8
+      },
+      {
+        "key": "safety",
+        "amount": 5,
+        "reason": "裂缝热图让车队绕开最薄的一段冰架。"
+      },
+      {
+        "key": "commsConfidence",
+        "amount": 8
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "droneRecon",
+        "value": true
+      }
+    ],
+    "next": "relay",
+    "eventId": "ice-drone-scan"
+  },
+  {
+    "id": "ice-push-through",
+    "sceneId": "ice-event",
+    "label": "不停车，压过错层带",
+    "intent": "把颠簸和风险交给轮组与人的反应。",
+    "requires": ["flag:routeSouth", "energy>=8"],
+    "preview": "能源 -8；物资 -3；安全 -18。",
+    "effects": [
+      {
+        "key": "energy",
+        "amount": -8
+      },
+      {
+        "key": "supplies",
+        "amount": -3
+      },
+      {
+        "key": "safety",
+        "amount": -18,
+        "reason": "车体通过错层带时侧向冲击损坏了一个外部锁扣。"
+      },
+      {
+        "key": "crewFatigue",
+        "target": "pei",
+        "amount": 12
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "iceUnmitigated",
+        "value": true
+      }
+    ],
+    "next": "relay",
+    "eventId": "ice-push-through"
+  },
+  {
+    "id": "steam-relay",
+    "sceneId": "steam-event",
+    "label": "启用备用中继",
+    "intent": "让队伍看见蒸汽后面的数据，即使这会削减爬坡余量。",
+    "requires": ["flag:routeWest", "energy>=12", "supplies>=4"],
+    "preview": "能源 -12；物资 -4；团队信任 +4；通信置信度 +14。",
+    "effects": [
+      {
+        "key": "energy",
+        "amount": -12,
+        "reason": "备用中继持续供电，车队电池少了一段爬坡余量。"
+      },
+      {
+        "key": "supplies",
+        "amount": -4
+      },
+      {
+        "key": "trust",
+        "amount": 4,
+        "reason": "阿阮终于能向每个人同步同一份数据。"
+      },
+      {
+        "key": "commsConfidence",
+        "amount": 14
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "relayActive",
+        "value": true
+      }
+    ],
+    "next": "relay",
+    "eventId": "steam-relay"
+  },
+  {
+    "id": "steam-low-signal",
+    "sceneId": "steam-event",
+    "label": "低信号行驶",
+    "intent": "保持车辆移动，把观测盲区留给下一段。",
+    "requires": ["flag:routeWest", "energy>=6"],
+    "preview": "能源 -6；安全 -8；通信置信度 -20。",
+    "effects": [
+      {
+        "key": "energy",
+        "amount": -6
+      },
+      {
+        "key": "safety",
+        "amount": -8,
+        "reason": "蒸汽让前车雷达短暂失真，车队靠人工手势完成换道。"
+      },
+      {
+        "key": "commsConfidence",
+        "amount": -20
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "lowSignal",
+        "value": true
+      }
+    ],
+    "next": "relay",
+    "eventId": "steam-low-signal"
+  },
+  {
+    "id": "steam-old-tunnel",
+    "sceneId": "steam-event",
+    "label": "相信周砾的旧井道",
+    "intent": "走维护井道的有线接口，避开最浓的蒸汽。",
+    "requires": ["flag:routeWest", "trust>=45", "supplies>=3"],
+    "preview": "时间 -32 分钟；物资 -3；安全 +2；解锁手动接口。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -32,
+        "reason": "旧井道入口被冻住，周砾花时间切开检修盖。"
+      },
+      {
+        "key": "supplies",
+        "amount": -3
+      },
+      {
+        "key": "safety",
+        "amount": 2,
+        "reason": "井道避开了喷口，车辆保持低速稳定。"
+      },
+      {
+        "key": "trust",
+        "amount": 3
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "oldTunnel",
+        "value": true
+      }
+    ],
+    "next": "relay",
+    "eventId": "steam-old-tunnel"
+  },
+  {
+    "id": "relay-calibrate-stop",
+    "sceneId": "calibration",
+    "label": "停车完成低温预校准",
+    "intent": "在还有选择的时候把校验位对齐。",
+    "requires": ["time>=60", "energy>=5"],
+    "preview": "时间 -60 分钟；能源 -5；安全 +5；发动机稳定度 +15。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -60,
+        "reason": "沈葵将点火芯停在冷却舱内完成校验。"
+      },
+      {
+        "key": "energy",
+        "amount": -5
+      },
+      {
+        "key": "safety",
+        "amount": 5
+      },
+      {
+        "key": "engineStability",
+        "amount": 15,
+        "reason": "校准码对齐，塔端失超预警下降。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "preCalibrated",
+        "value": true
+      }
+    ],
+    "next": "mount",
+    "eventId": "precalibrate-stop"
+  },
+  {
+    "id": "relay-calibrate-moving",
+    "sceneId": "calibration",
+    "label": "边走边校准",
+    "intent": "把校验工作分散到行驶途中，保住时间。",
+    "requires": ["energy>=10"],
+    "preview": "能源 -10；安全 -10；发动机稳定度 +3。",
+    "effects": [
+      {
+        "key": "energy",
+        "amount": -10
+      },
+      {
+        "key": "safety",
+        "amount": -10,
+        "reason": "行驶震动让校验结果只能被标记为低置信度。"
+      },
+      {
+        "key": "engineStability",
+        "amount": 3
+      },
+      {
+        "key": "commsConfidence",
+        "amount": -4
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "movingCalibration",
+        "value": true
+      }
+    ],
+    "next": "mount",
+    "eventId": "precalibrate-moving"
+  },
+  {
+    "id": "relay-skip-calibration",
+    "sceneId": "calibration",
+    "label": "跳过预校准，直接进塔区",
+    "intent": "把完整校验留给塔下最后一次机会。",
+    "requires": [],
+    "preview": "发动机稳定度 -15；风险被推迟到磁约束腔。",
+    "effects": [
+      {
+        "key": "engineStability",
+        "amount": -15,
+        "reason": "缺失的校验位没有被修正，失超预警被保留到塔下。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "calibrationSkipped",
+        "value": true
+      }
+    ],
+    "next": "mount",
+    "eventId": "precalibrate-skip"
+  },
+  {
+    "id": "mount-purge-safe",
+    "sceneId": "mount",
+    "label": "泄压净化后降功率重启",
+    "intent": "让推进腔先恢复可控，再交出最后一枚冷却芯。",
+    "requires": ["time>=90", "energy>=18", "supplies>=3"],
+    "preview": "时间 -90 分钟；能源 -18；物资 -3；安全 +10；发动机稳定度 +18。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -90,
+        "reason": "推进腔泄压净化把高热区隔离，等待冷却曲线落入绿区。"
+      },
+      {
+        "key": "energy",
+        "amount": -18
+      },
+      {
+        "key": "supplies",
+        "amount": -3
+      },
+      {
+        "key": "safety",
+        "amount": 10,
+        "reason": "净化阶段没有让人员进入高磁扰区域。"
+      },
+      {
+        "key": "engineStability",
+        "amount": 18,
+        "reason": "降功率启动降低了磁体温升速率。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "safeRestart",
+        "value": true
+      }
+    ],
+    "next": "ignition",
+    "eventId": "safe-restart"
+  },
+  {
+    "id": "mount-bypass",
+    "sceneId": "mount",
+    "label": "旁路直连点火",
+    "intent": "跳过完整净化，把时间换成一次高风险的直接接入。",
+    "requires": ["time>=18", "energy>=8"],
+    "preview": "时间 -18 分钟；能源 -8；安全 -20；发动机稳定度 +10。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -18,
+        "reason": "旁路夹具直接接入推进腔，省下净化等待。"
+      },
+      {
+        "key": "energy",
+        "amount": -8
+      },
+      {
+        "key": "safety",
+        "amount": -20,
+        "reason": "人员在磁扰未完全压低时完成插接。"
+      },
+      {
+        "key": "engineStability",
+        "amount": 10
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "bypass",
+        "value": true
+      },
+      {
+        "key": "crewHealth",
+        "target": "zhou",
+        "amount": -18,
+        "reason": "周砾在磁扰区手动插接，健康 -18。"
+      }
+    ],
+    "next": "ignition",
+    "eventId": "bypass-ignition"
+  },
+  {
+    "id": "mount-remote-align",
+    "sceneId": "mount",
+    "label": "远程分工对齐",
+    "intent": "把最危险的读数交给无人机和旧井道接口完成。",
+    "requires": ["flag:relayActive", "comms>=60", "energy>=12", "supplies>=4"],
+    "preview": "能源 -12；物资 -4；安全 +6；发动机稳定度 +10。",
+    "effects": [
+      {
+        "key": "energy",
+        "amount": -12
+      },
+      {
+        "key": "supplies",
+        "amount": -4
+      },
+      {
+        "key": "safety",
+        "amount": 6,
+        "reason": "队员留在控制台外，远程机械臂承担第一轮对齐。"
+      },
+      {
+        "key": "engineStability",
+        "amount": 10,
+        "reason": "中继恢复了完整的相位反馈。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "remoteAlign",
+        "value": true
+      }
+    ],
+    "next": "ignition",
+    "eventId": "remote-align"
+  },
+  {
+    "id": "ignition-all-cooling",
+    "sceneId": "ignition",
+    "label": "投入全部冷却芯，稳态点火",
+    "intent": "先把这座塔推回安全输出，再承担下一座塔的缺口。",
+    "requires": ["supplies>=20", "energy>=15"],
+    "preview": "物资 -20；能源 -15；安全 +8；发动机稳定度 +22。",
+    "effects": [
+      {
+        "key": "supplies",
+        "amount": -20
+      },
+      {
+        "key": "energy",
+        "amount": -15
+      },
+      {
+        "key": "engineStability",
+        "amount": 22,
+        "reason": "塔端以降功率稳态重新接入推力网络。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "fired",
+        "value": true
+      },
+      {
+        "key": "safety",
+        "amount": 4
+      },
+      {
+        "key": "time",
+        "amount": -50,
+        "reason": "完成点火观测与撤收耗时 50 分钟。"
+      }
+    ],
+    "next": "ending",
+    "eventId": "stable-ignition"
+  },
+  {
+    "id": "ignition-reserve-next",
+    "sceneId": "ignition",
+    "label": "保留一半冷却芯给下一座塔",
+    "intent": "把今天的成功和明天的风险放在同一份记录里。",
+    "requires": ["supplies>=10", "energy>=10"],
+    "preview": "物资 -10；能源 -10；安全 +4；发动机稳定度 +12。",
+    "effects": [
+      {
+        "key": "supplies",
+        "amount": -10
+      },
+      {
+        "key": "energy",
+        "amount": -10
+      },
+      {
+        "key": "safety",
+        "amount": 4
+      },
+      {
+        "key": "engineStability",
+        "amount": 12,
+        "reason": "保守输出让塔在缺少一半冷却芯时仍然保持最低稳定区间。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "firedPartial",
+        "value": true
+      },
+      {
+        "key": "time",
+        "amount": -50,
+        "reason": "完成点火观测与撤收耗时 50 分钟。"
+      }
+    ],
+    "next": "ending",
+    "eventId": "partial-ignition"
+  },
+  {
+    "id": "ignition-delay-crew",
+    "sceneId": "ignition",
+    "label": "撤出队员，取消本次点火",
+    "intent": "把人从磁扰区撤出，再让塔自己完成低功率循环。",
+    "requires": ["crew>=4", "time>=60"],
+    "preview": "时间 -60 分钟；安全 +12；信任 +4；保留点火芯。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -60
+      },
+      {
+        "key": "safety",
+        "amount": 12,
+        "reason": "队员退出高磁扰维护口，等待温度和应力自然下降。"
+      },
+      {
+        "key": "trust",
+        "amount": 4,
+        "reason": "所有人知道撤出不是放弃，而是让下一轮仍有完整队形。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "delayedIgnition",
+        "value": true
+      }
+    ],
+    "next": "ending",
+    "eventId": "crew-first-delay"
+  },
+  {
+    "id": "relay-build",
+    "sceneId": "relay",
+    "label": "架设中继，再交接校准数据",
+    "intent": "把不完整的信号拼回公共频道。",
+    "preview": "时间 -45；能源 -8；物资 -4；通信 +24。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -45
+      },
+      {
+        "key": "energy",
+        "amount": -8
+      },
+      {
+        "key": "supplies",
+        "amount": -4
+      },
+      {
+        "key": "commsConfidence",
+        "amount": 24,
+        "reason": "中继从山脊绕过遮挡，所有人看到同一份记录。"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "relayActive",
+        "value": true
+      }
+    ],
+    "next": "calibration",
+    "requires": [],
+    "eventId": "relay-build"
+  },
+  {
+    "id": "relay-wired",
+    "sceneId": "relay",
+    "label": "走有线接口",
+    "intent": "相信周砾留下的维护线，而不是塔端的无线读数。",
+    "preview": "时间 -70；物资 -5；通信 +18；信任 +5。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -70
+      },
+      {
+        "key": "supplies",
+        "amount": -5
+      },
+      {
+        "key": "commsConfidence",
+        "amount": 18
+      },
+      {
+        "key": "trust",
+        "amount": 5
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "relayActive",
+        "value": true
+      }
+    ],
+    "next": "calibration",
+    "requires": ["trust>=45"],
+    "eventId": "relay-wired"
+  },
+  {
+    "id": "relay-blind",
+    "sceneId": "relay",
+    "label": "保留电量，凭本地读数继续",
+    "intent": "现场工程师直接接管，让未知风险留在记录上。",
+    "preview": "时间 -20；通信 -25；安全 -8。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -20
+      },
+      {
+        "key": "commsConfidence",
+        "amount": -25,
+        "reason": "车队进入背坡盲区。远程对齐无法可靠执行。"
+      },
+      {
+        "key": "safety",
+        "amount": -8
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      }
+    ],
+    "next": "calibration",
+    "requires": [],
+    "eventId": "relay-blind"
+  },
+  {
+    "id": "ignition-overdrive",
+    "sceneId": "ignition",
+    "label": "旁路增压：强行拉起点火曲线",
+    "intent": "用最后的安全余量换取这一座塔的推力。",
+    "preview": "时间 -20；能源 -10；物资 -14；安全 -18；稳定度 +26。",
+    "effects": [
+      {
+        "key": "time",
+        "amount": -20
+      },
+      {
+        "key": "energy",
+        "amount": -10
+      },
+      {
+        "key": "supplies",
+        "amount": -14
+      },
+      {
+        "key": "safety",
+        "amount": -18
+      },
+      {
+        "key": "engineStability",
+        "amount": 26
+      },
+      {
+        "key": "crewHealth",
+        "amount": -15,
+        "reason": "高压插接让周砾负伤，代价会留在记录中。",
+        "target": "zhou"
+      },
+      {
+        "key": "progress",
+        "amount": 12.5
+      },
+      {
+        "key": "flag",
+        "flag": "overdrive",
+        "value": true
+      }
+    ],
+    "next": "ending",
+    "requires": ["flag:bypass", "energy>=10", "supplies>=14"],
+    "eventId": "ignition-overdrive"
+  }
+]
