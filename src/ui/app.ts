@@ -1,515 +1,333 @@
-import endingsData from '../data/endings.json';
 import locationsData from '../data/locations.json';
 import sourcesData from '../data/sources.json';
-import {
-  act,
-  ActionError,
-  availableOptions,
-  CARDS,
-  cardById,
-  cardsForRound,
-  currentAdvice,
-  eventById,
-  EVENTS,
-  LUNA,
-  newGame,
-  replay,
-  stationAvailable,
-  type Action,
-} from '../engine/engine';
-import { stability, surveyStage } from '../engine/endings';
-import { lunaAccuracy } from '../engine/luna';
+import { act, ActionError, availableChoices, availableResponses, currentAdvice, currentNode, newGame, type Action } from '../engine/engine';
+import { metrics } from '../engine/endings';
+import { RESOURCE_COLORS, RESOURCE_KEYS } from '../engine/rules';
+import type { GameState, ResourceKey } from '../engine/types';
+import type { SceneApi, Shot, ViewMode } from '../scene/scene';
+import { epilogue, introLines, mainChoiceLines, PROLOGUE, responseLines, resultLines, type Line } from '../story/story';
 import { randomSeed } from '../engine/rng';
-import { RULES, STAT_LABEL } from '../engine/rules';
-import type { Card, Category, Effects, GameState, LunaAdvice, StatKey } from '../engine/types';
-import type { SceneApi, ViewMode } from '../scene/scene';
-import { heightAt, lightWindow, LOCATIONS, METERS_PER_UNIT, routeBetween, slopeAt, sunlitFraction, type LocationId } from '../world/terrain';
-import { CATEGORY_LABEL, effectChips, esc, pct, RISK_LABEL, tag } from './format';
+import { Dialogue } from './dialogue';
+import { effectChips, esc, pct, resourceLabel } from './format';
 
 interface LocationInfo {
   name: string;
   layer: string;
   role: string;
-  facts: { kind: Category; text: string; src: string | null }[];
-}
-interface Source {
-  id: string;
-  title: string;
-  org: string;
-  year: number;
-  url: string;
-  usedFor: string;
-}
-interface EndingText {
-  tier: string;
-  title: string;
-  subtitle: string;
-  text: string;
+  facts: { kind: string; text: string; src: string | null }[];
 }
 
-const PLACES = locationsData as Record<LocationId, LocationInfo>;
-const SOURCES = sourcesData as Source[];
-const ENDINGS = endingsData as Record<string, EndingText>;
+type Tab = 'act' | 'status' | 'place' | 'log';
 
-const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
+const $ = <T extends HTMLElement = HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
+const ACT_NAMES = { 1: '沉默的回声', 2: '谁有权知道', 3: '群星计划' } as const;
+const PLACES = locationsData as Record<string, LocationInfo>;
+const SOURCES = sourcesData as { id: string; title: string; org: string; year: number; url: string; usedFor: string }[];
 
 export class App {
   private state: GameState;
-  private prev: GameState | null = null;
-  private selected: LocationId = 'core';
-  private tab: 'log' | 'basis' | 'delayed' = 'log';
+  private tab: Tab = 'act';
+  private selected = 'core';
   private toastTimer = 0;
-  private lightCache = new Map<LocationId, boolean[]>();
+  private bannerTimer = 0;
+  private dialogue: Dialogue;
 
   constructor(private scene: SceneApi | null) {
     this.state = newGame(randomSeed());
+    this.dialogue = new Dialogue($('#dialogue'), (line) => this.onLine(line));
     this.bindStatic();
-    this.scene?.onSelect((id) => this.select(id, true));
-    if (window.matchMedia('(max-width: 820px)').matches) $('#place').dataset.collapsed = 'true';
+    scene?.onSelect((id) => {
+      this.selected = id;
+      this.scene?.setFocus(id);
+      this.openDrawer('place');
+    });
     this.renderAll();
-    this.showStart();
+    this.showTitle();
   }
 
-  // ---------------------------------------------------------------- 事件绑定
   private bindStatic() {
-    $('#btn-restart').addEventListener('click', () => this.showStart());
-    $('#btn-science').addEventListener('click', () => this.showScience());
-    document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) =>
-      b.addEventListener('click', () => this.setView(b.dataset.view as ViewMode)),
-    );
-    document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((b) =>
-      b.addEventListener('click', () => {
-        this.tab = b.dataset.tab as typeof this.tab;
-        document.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('is-active', x === b));
-        this.renderBottom();
-      }),
-    );
-    // 右侧面板使用事件委托
-    $('#side').addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).closest('[data-ui="ending"]')) return this.showEnding();
-      const el = (e.target as HTMLElement).closest<HTMLElement>('[data-act]');
-      if (!el || (el as HTMLButtonElement).disabled) return;
-      this.dispatch(JSON.parse(el.dataset.act!) as Action);
+    $('#btn-menu').addEventListener('click', () => this.showMenu());
+    $('#btn-help').addEventListener('click', () => this.showHelp());
+    document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((button) => button.addEventListener('click', () => this.setView(button.dataset.view as ViewMode)));
+    document.querySelectorAll<HTMLButtonElement>('[data-open]').forEach((button) => button.addEventListener('click', () => this.openDrawer(button.dataset.open as Tab)));
+    document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((button) => button.addEventListener('click', () => this.openDrawer(button.dataset.tab as Tab)));
+    $('#drawer-close').addEventListener('click', () => this.closeDrawer());
+    $('#hud-res').addEventListener('click', () => this.openDrawer('status'));
+    $('#hud-luna').addEventListener('click', () => this.openDrawer('act'));
+    $('#hud-cta').addEventListener('click', (event) => {
+      const target = (event.target as HTMLElement).closest<HTMLElement>('[data-cta]');
+      if (!target) return;
+      const key = target.dataset.cta;
+      if (key === 'open') this.openDrawer('act');
+      if (key === 'continue') this.dispatch({ t: 'continue' });
+      if (key === 'ending') this.showEnding();
     });
-    $('#place').addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).closest('[data-toggle-place]')) {
-        const p = $('#place');
-        p.dataset.collapsed = p.dataset.collapsed === 'true' ? 'false' : 'true';
+    $('#drawer-body').addEventListener('click', (event) => {
+      const target = (event.target as HTMLElement).closest<HTMLElement>('[data-act]');
+      if (target && !(target as HTMLButtonElement).disabled) this.dispatch(JSON.parse(target.dataset.act!) as Action);
+      const place = (event.target as HTMLElement).closest<HTMLElement>('[data-place]');
+      if (place) {
+        this.selected = place.dataset.place!;
+        this.scene?.setFocus(this.selected === 'earth-city' ? null : (this.selected as never));
+        this.renderDrawer();
       }
+      if ((event.target as HTMLElement).closest('[data-ui="ending"]')) this.showEnding();
     });
-    $('#overlay').addEventListener('click', (e) => this.onOverlayClick(e));
+    $('#overlay').addEventListener('click', (event) => this.onOverlayClick(event));
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !this.dialogue.active && $('#overlay').hidden && !$('#drawer').hidden) this.closeDrawer();
+    });
   }
 
   private setView(mode: ViewMode) {
-    document.querySelectorAll('[data-view]').forEach((x) => x.classList.toggle('is-active', (x as HTMLElement).dataset.view === mode));
+    document.querySelectorAll('[data-view]').forEach((item) => item.classList.toggle('is-active', (item as HTMLElement).dataset.view === mode));
     this.scene?.setView(mode);
-    if (mode === 'cutaway') this.select('undercity');
-    else if (mode === 'orbit') this.select('station');
+    if (mode === 'globe') this.selected = 'station';
+    else if (mode === 'cutaway') this.selected = 'core';
+    else this.selected = 'core';
+    this.scene?.setFocus(this.selected as never);
   }
 
-  /** expand：用户主动点击时展开地点卡；程序触发的聚焦保持当前折叠状态 */
-  private select(id: LocationId, expand = false) {
-    this.selected = id;
-    this.scene?.setFocus(id);
-    if (expand) $('#place').dataset.collapsed = 'false';
-    this.renderPlace();
+  private onLine(line: Line | null) {
+    document.querySelectorAll('.is-hl').forEach((item) => item.classList.remove('is-hl'));
+    if (!line) return;
+    if (line.shot) void this.shot(line.shot as Shot);
+    if (line.focus) {
+      this.selected = line.focus;
+      this.scene?.setFocus(line.focus as never);
+    }
+    if (line.hl) document.querySelector(line.hl)?.classList.add('is-hl');
   }
 
-  private dispatch(a: Action) {
+  private async story(lines: Line[]) {
+    await this.dialogue.play(lines);
+    this.renderCta();
+  }
+
+  private shot(shot: Shot) {
+    const view = shot === 'globe' || shot === 'earthmoon' || shot === 'station' ? 'globe' : shot === 'cutaway' ? 'cutaway' : 'overview';
+    this.setView(view);
+    return this.scene?.shot(shot);
+  }
+
+  private dispatch(action: Action) {
+    const previous = this.state;
     try {
-      const next = act(this.state, a);
-      this.prev = this.state;
-      this.state = next;
-    } catch (err) {
-      if (err instanceof ActionError) return this.toast(err.message);
-      throw err;
+      this.state = act(previous, action);
+    } catch (error) {
+      if (error instanceof ActionError) return this.toast(error.message);
+      throw error;
     }
-    if (a.t === 'card' || (a.t === 'delegate' && this.prev.phase === 'plan') || (a.t === 'lock' && a.choice !== 'withdraw')) {
-      const card = cardById(this.state.chosenCardId);
-      if (card) {
-        this.scene?.sendRover(card.location);
-        this.select(card.location);
-      }
-    }
-    if (a.t === 'undercity') {
-      this.setView('cutaway');
-    }
-    if (a.t === 'station') this.select('station');
     this.renderAll();
-    if (this.state.phase === 'ended') window.setTimeout(() => this.showEnding(), 700);
+    void this.afterAction(action);
   }
 
-  private toast(msg: string, kind: 'error' | 'info' = 'error') {
-    const t = $('#toast');
-    t.textContent = msg;
-    t.dataset.kind = kind;
-    t.classList.add('is-show');
+  private async afterAction(action: Action) {
+    const node = currentNode(this.state);
+    if (this.state.phase === 'ended' && this.state.ending) {
+      this.closeDrawer();
+      await this.story(epilogue(this.state.ending));
+      this.showEnding();
+      return;
+    }
+    if (action.t === 'main') {
+      const choice = node.choices.find((item) => item.id === this.state.chosenChoiceId);
+      if (choice) await this.story(mainChoiceLines(node, choice.label));
+      this.openDrawer('act');
+      return;
+    }
+    if (action.t === 'response') {
+      const response = availableResponses(this.state).find((item) => item.id === action.choiceId);
+      if (response) await this.story(responseLines(node, response.label));
+      await this.story(resultLines(this.state));
+      if (this.state.phase === 'transition') {
+        this.toast('剧情将自动进入下一节点', 'info');
+        window.setTimeout(() => {
+          if (this.state.phase === 'transition') this.dispatch({ t: 'continue' });
+        }, 520);
+      } else {
+        this.openDrawer('act');
+      }
+      return;
+    }
+    if (action.t === 'continue' && this.state.phase === 'node') {
+      const next = currentNode(this.state);
+      this.banner(`第 ${this.state.nodeCount} 个节点`, ACT_NAMES[next.act]);
+      await this.story(introLines(next));
+      return;
+    }
+    if (action.t === 'inquire') {
+      await this.story([{ who: 'luna', text: '我能公开判断依据，但不会替你决定哪些人有权知道。' }]);
+      return;
+    }
+    this.openDrawer('act');
+  }
+
+  private toast(message: string, kind: 'error' | 'info' = 'error') {
+    const toast = $('#toast');
+    toast.textContent = message;
+    toast.dataset.kind = kind;
+    toast.classList.add('is-show');
     clearTimeout(this.toastTimer);
-    this.toastTimer = window.setTimeout(() => t.classList.remove('is-show'), 2600);
+    this.toastTimer = window.setTimeout(() => toast.classList.remove('is-show'), Math.max(2200, message.length * 80));
   }
 
-  // ---------------------------------------------------------------- 渲染
+  private banner(title: string, subtitle: string) {
+    const banner = $('#banner');
+    banner.innerHTML = `<b>${esc(title)}</b><span>${esc(subtitle)}</span>`;
+    banner.classList.remove('is-show');
+    void banner.offsetWidth;
+    banner.classList.add('is-show');
+    clearTimeout(this.bannerTimer);
+    this.bannerTimer = window.setTimeout(() => banner.classList.remove('is-show'), 2400);
+  }
+
+  private openDrawer(tab: Tab) {
+    this.tab = tab;
+    $('#drawer').hidden = false;
+    document.body.classList.add('drawer-open');
+    this.renderDrawer();
+  }
+
+  private closeDrawer() {
+    $('#drawer').hidden = true;
+    document.body.classList.remove('drawer-open');
+  }
+
   private renderAll() {
-    const s = this.state;
-    this.scene?.setDay(s.day);
-    this.scene?.setStation(s.stationUnlocked);
-    this.scene?.setUndercity(s.undercity, s.governance);
-    this.renderClock();
-    this.renderSide();
-    this.renderBottom();
-    this.renderPlace();
+    const node = currentNode(this.state);
+    this.scene?.setDay(this.state.nodeCount * 4);
+    this.scene?.setStation(this.state.act >= 2);
+    this.scene?.setUndercity('locked', null);
+    this.renderTime();
+    this.renderResources();
+    this.renderLuna();
+    this.renderCta();
+    if (!$('#drawer').hidden) this.renderDrawer();
+    $('#dock-delayed').textContent = this.state.evidence.length ? String(this.state.evidence.length) : '';
+    if (node.location === 'station') this.selected = 'station';
   }
 
-  private renderClock() {
+  private renderTime() {
     const s = this.state;
-    const from = s.day + 1;
-    const to = Math.min(30, s.day + RULES.daysPerRound);
-    const days = Array.from({ length: 30 }, (_, i) => `<i class="${i < s.day ? 'past' : i < s.day + 5 && s.phase !== 'ended' ? 'now' : ''}"></i>`).join('');
-    $('#clock').innerHTML = `
-      <div class="clock__row">
-        <span>主回合 <strong>${s.round}</strong> / ${RULES.rounds}</span>
-        <span>${s.phase === 'ended' ? '任务结束' : `月面日 <strong>${from}–${to}</strong> / 30`}</span>
-        <span>勘测阶段 <strong>${surveyStage(s.stats.survey)}</strong> / 3</span>
-        <span title="同一种子 + 同一选择 = 同一结果">种子 <strong style="font-family:var(--mono)">${s.seed}</strong></span>
-      </div>
-      <div class="days" aria-hidden="true">${days}</div>`;
+    const progress = Math.min(100, Math.round((s.nodeCount / s.targetNodes) * 100));
+    const bars = Array.from({ length: 9 }, (_, i) => `<i class="${i < s.nodeCount ? 'past' : i === s.nodeCount ? 'now' : ''}"></i>`).join('');
+    $('#hud-time').innerHTML = `<div class="ht__row"><b>调查节点 <small>${s.nodeCount}/${s.targetNodes}</small></b><span>${esc(ACT_NAMES[s.act])}</span></div><div class="days" aria-label="剧情进度 ${progress}%">${bars}</div>`;
   }
 
-  private statRow(k: StatKey, color: string, marks: number[] = []) {
+  private renderResources() {
     const s = this.state;
-    const v = s.stats[k];
-    const d = this.prev ? v - this.prev.stats[k] : 0;
-    const low = ['energy', 'life', 'supplies', 'equipment', 'team'].includes(k) && v < RULES.safety;
-    return `<div class="stat ${low ? 'stat--low' : ''}">
-      <div class="stat__top"><span>${STAT_LABEL[k]}</span><b>${v}${d ? `<span class="delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${d}</span>` : ''}</b></div>
-      <div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%;background:${color}"></i>${marks.map((m) => `<span class="mark" style="left:${m}%"></span>`).join('')}</div>
-    </div>`;
+    const values = RESOURCE_KEYS.map((key) => s.resources[key]);
+    const critical = Math.min(...values);
+    const status = critical < 25 ? '需要立即调整' : critical < 45 ? '正在承压' : '运行稳定';
+    const klass = critical < 25 ? 'is-danger' : critical < 45 ? 'is-warn' : '';
+    const metric = (key: ResourceKey) => `<span class="status__metric"><small>${resourceLabel(key)}</small><b>${s.resources[key]}</b></span>`;
+    $('#hud-res').className = `hud-res ${klass}`;
+    $('#hud-res').innerHTML = `<span class="status__signal"></span><span class="status__main"><b>基地${status}</b><small>证据 ${s.evidence.length}/3 · 信任 ${s.resources.trust}</small></span>${metric('life')}${metric('energy')}<span class="status__open">状态 <span>↗</span></span>`;
   }
 
-  private renderSide() {
-    const s = this.state;
-    const advice = s.phase === 'plan' || s.phase === 'event' ? currentAdvice(s) : null;
-    const stab = stability(s);
-    const marginD = this.prev ? s.stats.margin - this.prev.stats.margin : 0;
-    const resources = `
-      <section class="card" aria-label="资源">
-        <h2 class="section-title">基地资源与指标 ${tag('param')}</h2>
-        <div class="stats">
-          ${this.statRow('energy', '#ffd166')}
-          ${this.statRow('life', '#6be3a4', [RULES.safety])}
-          ${this.statRow('supplies', '#a0c4ff')}
-          ${this.statRow('equipment', '#c9c9c9')}
-          ${this.statRow('team', '#ff9fb2')}
-          ${this.statRow('research', '#7fd8ff')}
-          ${this.statRow('survey', 'linear-gradient(90deg,#4fb6e8,#7fd8ff)', [34, 67])}
-          ${this.statRow('autonomy', '#ffb84d', [RULES.ending.autonomy])}
-        </div>
-        <div class="stats__extra">
-          <span>时间余量 <b>${s.stats.margin} 日</b>${marginD ? `<span class="delta ${marginD > 0 ? 'up' : 'down'}">${marginD > 0 ? '+' : ''}${marginD}</span>` : ''}</span>
-          <span>基地稳定度 <b>${stab}</b></span>
-          <span>Luna 信任 <b>${s.stats.trust}</b></span>
-        </div>
-      </section>`;
-
-    $('#side').innerHTML = resources + this.lunaPanel(advice) + this.actionPanel(advice);
+  private renderLuna() {
+    const stage = this.state.lunaAuthority >= 60 ? 3 : this.state.lunaAuthority >= 38 ? 2 : 1;
+    const label = stage === 3 ? '权限扩大' : stage === 2 ? '开始施压' : '提供建议';
+    $('#hud-luna').dataset.stage = String(stage);
+    $('#hud-luna').innerHTML = `<span class="orb"></span><span class="hl__txt"><b>Luna</b><small>${label} · 置信度 ${Math.round(currentAdvice(this.state).confidence * 100)}%</small></span>`;
   }
 
-  private lunaPanel(advice: LunaAdvice | null): string {
+  private renderCta() {
     const s = this.state;
-    const stage = s.lockdown ? 3 : s.lunaStage;
-    const stageName = { 1: '建议', 2: '施压', 3: '有限接管' }[stage];
-    const acc = lunaAccuracy(s);
-    let recName = '';
-    if (advice) {
-      recName = s.phase === 'plan' ? (cardById(advice.cardId)?.title ?? '') : (availableOptions(s).find((o) => o.id === advice.cardId)?.label ?? '');
+    let kicker = `第 ${s.nodeCount} 个节点 · ${ACT_NAMES[s.act]}`;
+    let label = currentNode(s).title;
+    let button = '查看行动 ▸';
+    let key = 'open';
+    if (s.phase === 'response') {
+      kicker = '回应阶段';
+      label = '选择你的立场和后果';
+      button = '查看回应 ▸';
+    } else if (s.phase === 'transition') {
+      kicker = '节点结算';
+      label = s.pendingResult?.lines[0] ?? '后果已记录';
+      button = '立即进入下一段 ▸';
+      key = 'continue';
+    } else if (s.phase === 'ended') {
+      kicker = '调查结束';
+      label = '查看三地决策报告';
+      button = '查看结算 ▸';
+      key = 'ending';
     }
-    const line = s.lockdown ? LUNA.takeover : advice ? (s.phase === 'event' ? advice.line : (LUNA.stage as Record<string, string>)[String(stage)]) : s.phase === 'resolve' ? '结算完成。推进后我会对照预测检查结果。' : '';
-    const body = advice
-      ? `
-        <div class="luna__rec">
-          <div class="wide"><small>推荐方案</small><b style="font-family:var(--font)">${esc(recName)}</b></div>
-          <div><small>预测置信度</small><b>${pct(advice.confidence)}</b></div>
-          <div><small>历史准确率</small><b>${pct(acc)}</b></div>
-          <div><small>模型偏差</small><b>${Math.round(s.lunaBias * 100)}%</b></div>
-        </div>
-        <small class="note">判断依据</small>
-        <ul>${advice.basis.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
-        <div class="luna__sac">可能牺牲的价值：${esc(advice.sacrifice)}</div>
-        ${s.lockdown ? '' : `<div class="luna__actions">
-          <button class="btn btn--luna" type="button" data-act='{"t":"inquire"}' ${s.inquiredThisPhase ? 'disabled' : ''} title="揭示所有方案的延迟后果（自主性 +1，信任 +1）">${s.inquiredThisPhase ? '已追问' : '追问 Luna'}</button>
-          <button class="btn btn--luna" type="button" data-act='{"t":"delegate"}' title="由 Luna 代为决策（自主性 −4，信任 +3，时间余量 +1）">授权 Luna 决策</button>
-        </div>`}
-        <p class="note">选择推荐方案 = 接受（自主性 −2）；选择其他方案 = 否决（自主性 +${s.lunaStage >= 2 ? 4 : 3}，信任 −${s.lunaStage >= 2 ? 4 : 2}）。</p>`
-      : `<div class="luna__rec"><div><small>历史准确率</small><b>${pct(acc)}</b></div><div><small>预测记录</small><b>${s.lunaHits}/${s.lunaTotal}</b></div><div><small>模型偏差</small><b>${Math.round(s.lunaBias * 100)}%</b></div></div>`;
-    return `
-      <section class="card luna" data-stage="${stage}" aria-label="Luna">
-        <div class="luna__head">
-          <div class="luna__avatar" aria-hidden="true"></div>
-          <div><span class="luna__name">Luna</span><span class="stage-pill stage-pill--${stage}">阶段 ${stage} · ${stageName}</span>
-          <div class="note" style="margin:0">任务协同 AI · 安全监管者 · 规则驱动（离线）</div></div>
-        </div>
-        <p class="luna__line">“${esc(line)}”</p>
-        ${body}
-      </section>`;
+    $('#hud-cta').innerHTML = `<div class="cta__txt"><small>${esc(kicker)}</small><b>${esc(label)}</b></div><div class="cta__btns"><button class="btn btn--primary cta__btn" type="button" data-cta="${key}">${button}</button></div>`;
   }
 
-  private actionPanel(advice: LunaAdvice | null): string {
+  private renderDrawer() {
+    document.querySelectorAll('[data-tab]').forEach((item) => item.classList.toggle('is-active', (item as HTMLElement).dataset.tab === this.tab));
+    const body = $('#drawer-body');
+    if (this.tab === 'act') body.innerHTML = this.renderActionPanel();
+    else if (this.tab === 'status') body.innerHTML = this.renderStatusPanel();
+    else if (this.tab === 'place') body.innerHTML = this.renderPlacePanel();
+    else body.innerHTML = this.renderLogPanel();
+  }
+
+  private renderActionPanel(): string {
     const s = this.state;
-    if (s.phase === 'ended') {
-      return `<section class="card"><h2 class="section-title">任务结束</h2><button class="btn btn--primary btn--block" type="button" data-ui="ending">查看结算报告</button></section>`;
-    }
-    if (s.lockdown) return this.lockPanel();
-    if (s.phase === 'plan') return this.supportPanel() + this.cardsPanel(advice!);
-    if (s.phase === 'event') return this.eventPanel(advice!);
-    return this.resolvePanel();
+    const node = currentNode(s);
+    const advice = currentAdvice(s);
+    const buttons = s.phase === 'node' ? availableChoices(s).map((choice) => `<button class="choice" type="button" data-act='${JSON.stringify({ t: 'main', choiceId: choice.id })}'><b>${esc(choice.label)}</b><span>${esc(choice.desc)}</span>${effectChips(choice.effects)}<small>${choice.risk === 'none' || choice.risk === 'low' ? '可逆风险' : `风险：${choice.risk === 'mid' ? '中' : '高'}`}</small></button>`).join('') : s.phase === 'response' ? availableResponses(s).map((response) => `<button class="choice" type="button" data-act='${JSON.stringify({ t: 'response', choiceId: response.id })}'><b>${esc(response.label)}</b><span>${esc(response.desc)}</span>${effectChips(response.effects)}</button>`).join('') : s.phase === 'transition' ? `<button class="btn btn--primary" type="button" data-act='{"t":"continue"}'>进入下一个剧情节点</button>` : `<button class="btn btn--primary" type="button" data-ui="ending">查看结算报告</button>`;
+    const ask = s.phase === 'node' || s.phase === 'response' ? `<button class="btn btn--ghost btn--sm" type="button" data-act='{"t":"inquire"}'>追问 Luna</button>` : '';
+    return `<section class="panel-section"><div class="section-kicker">ACT ${s.act} · ${esc(ACT_NAMES[s.act])}</div><h2>${esc(node.title)}</h2><p class="lead">${esc(node.prompt)}</p><div class="luna-advice"><b>Luna 建议</b><span>${esc(advice.line)}</span><div class="luna__rec"><span>置信度 <b>${pct(advice.confidence)}</b></span><span>历史准确率 <b>${pct(advice.accuracy)}</b></span></div><small>${advice.basis.map(esc).join(' · ')}</small></div><div class="choice-list">${buttons}</div>${ask}</section>`;
   }
 
-  private supportPanel(): string {
+  private renderStatusPanel(): string {
     const s = this.state;
-    if (!s.stationUnlocked && s.undercity === 'locked') {
-      return `<section class="card"><h2 class="section-title">三层舞台</h2><p class="note">领航员空间站支援与月壤地下城将在第 3 个主回合结束后解锁。</p></section>`;
-    }
-    const st = RULES.station;
-    const stOk = stationAvailable(s) && !s.stationUsedThisRound;
-    const station = `
-      <div>
-        <h2 class="section-title">领航员空间站支援 <span class="note" style="margin:0">${s.commsDown ? '通信中断' : s.stationUsedThisRound ? '本回合已使用' : '每回合一次'}</span></h2>
-        <div class="support__grid">
-          <button class="btn" type="button" data-act='{"t":"station","kind":"supply"}' ${stOk ? '' : 'disabled'}><b>补给投放</b>${esc(fx(st.supply))}</button>
-          <button class="btn" type="button" data-act='{"t":"station","kind":"audit"}' ${stOk ? '' : 'disabled'}><b>AI 审计</b>校正 Luna 偏差；${esc(fx(st.audit))}</button>
-          <button class="btn" type="button" data-act='{"t":"station","kind":"uplink"}' ${stOk ? '' : 'disabled'}><b>数据上行</b>${esc(fx(st.uplink))}</button>
-        </div>
-      </div>`;
-    let under = '';
-    if (s.undercity === 'available') {
-      const claim = s.delegations + s.takeovers >= 3;
-      under = `
-        <div>
-          <h2 class="section-title">月壤地下城 · 启动 <span class="note" style="margin:0">${esc(fx(RULES.undercityCost))}</span></h2>
-          ${claim ? `<p class="note" style="color:var(--luna)">⚠ ${esc(LUNA.undercityClaim)}</p>` : ''}
-          <div class="support__duo">
-            <button class="btn" type="button" data-act='{"t":"undercity","gov":"luna"}'><b>交给 Luna 管理</b>${esc(fx(RULES.undercityLuna))}；上线后每回合 ${esc(fx(RULES.undercityLunaBonus))}</button>
-            <button class="btn" type="button" data-act='{"t":"undercity","gov":"human"}'><b>保持人类自治</b>${esc(fx(claim ? { ...RULES.undercityHuman, team: -10, margin: -1 } : RULES.undercityHuman))}</button>
-          </div>
-          <p class="note">上线后每回合生命支持消耗 −3，太阳风暴时可直接转入地下。</p>
-        </div>`;
-    } else if (s.undercity === 'building' || s.undercity === 'online') {
-      under = `<p class="note">月壤地下城：${s.undercity === 'building' ? '建设中（推进 5 日后上线）' : '已上线'} · ${s.governance === 'luna' ? 'Luna 托管' : '人类自治'}</p>`;
-    }
-    return `<section class="card support">${station}${under}</section>`;
+    const m = metrics(s);
+    const resources = RESOURCE_KEYS.map((key) => `<div class="metric"><span>${resourceLabel(key)}</span><div class="bar"><i style="width:${s.resources[key]}%;background:${RESOURCE_COLORS[key]}"></i></div><b>${s.resources[key]}</b></div>`).join('');
+    const evidence = ['orbit', 'sample', 'archive'].map((id) => `<span class="evidence ${s.evidence.includes(id as never) ? 'is-found' : ''}">${id === 'orbit' ? '轨道观测' : id === 'sample' ? '地下样本' : '早期任务日志'}</span>`).join('');
+    return `<section class="panel-section"><div class="section-kicker">当前状态</div><h2>四项核心变量</h2>${resources}<div class="state-grid"><div><small>证据</small><b>${m.evidence}/3</b></div><div><small>自主性</small><b>${m.autonomy}</b></div><div><small>地下城支持</small><b>${m.earthSupport}</b></div><div><small>Luna 权限</small><b>${s.lunaAuthority}</b></div></div><h3>证据链</h3><div class="evidence-list">${evidence}</div><h3>小队关系</h3><p>林曜 ${relationText(s.relations.lin)} · 苏禾 ${relationText(s.relations.su)}</p></section>`;
   }
 
-  private cardsPanel(advice: LunaAdvice): string {
-    const s = this.state;
-    const cards = cardsForRound(s.round);
-    return `<section class="plan-cards" aria-label="任务方案卡">
-      <h2 class="section-title" style="margin:0">选择 1 张任务方案卡</h2>
-      ${cards.map((c) => this.planCard(c, advice)).join('')}
-    </section>`;
+  private renderPlacePanel(): string {
+    const id = this.selected === 'station' ? 'station' : this.selected === 'earth-city' ? 'earth-city' : this.selected;
+    if (id === 'earth-city') return `<section class="panel-section"><div class="section-kicker">地球地下城</div><h2>人类生存与决策中心</h2><p class="lead">地下城居民依赖有限的水、氧和能源。每一次公开或延迟，都会改变他们是否继续支援月球。</p><div class="place-chips"><button class="loc" data-place="core">月面基地</button><button class="loc" data-place="station">领航员空间站</button></div></section>`;
+    const info = PLACES[id] ?? PLACES.core;
+    const facts = info.facts.slice(0, 3).map((fact) => `<li><span>${fact.kind}</span>${esc(fact.text)}</li>`).join('');
+    return `<section class="panel-section"><div class="section-kicker">${esc(info.layer)}</div><h2>${esc(info.name)}</h2><p class="lead">${esc(info.role)}</p><ul class="facts">${facts}</ul><div class="place-chips"><button class="loc" data-place="earth-city">地球地下城</button><button class="loc" data-place="station">领航员空间站</button><button class="loc" data-place="core">基地核心舱</button></div></section>`;
   }
 
-  private planCard(c: Card, advice: LunaAdvice): string {
-    const s = this.state;
-    const isRec = advice.cardId === c.id;
-    const warns = advice.warnings[c.id] ?? [];
-    const est = advice.estimates[c.id];
-    const place = PLACES[c.location];
-    const delayed = c.delayed?.length
-      ? s.inquiredThisPhase
-        ? c.delayed.map((d) => `<div class="pcard__row"><em>延迟后果（${d.in * 5} 日内）：</em>${esc(d.text)}</div>`).join('')
-        : `<div class="pcard__row"><em>延迟后果：</em>${esc(c.hint ?? '未知')}（追问 Luna 可揭示）</div>`
-      : s.inquiredThisPhase
-        ? `<div class="pcard__row"><em>延迟后果：</em>无</div>`
-        : '';
-    const check = c.check
-      ? `<div class="pcard__row"><em>风险检定「${esc(c.check.label)}」：</em>Luna 估计成功率 <b>${pct(est ?? c.check.p)}</b>
-          ${s.inquiredThisPhase ? `<br><em>成功：</em>${esc(fx(c.check.success) || '无额外影响')} <em>失败：</em>${esc(fx(c.check.fail))}` : ''}</div>`
-      : '';
-    return `<article class="pcard ${isRec ? 'is-rec' : ''}">
-      <div class="pcard__head">
-        <h3 class="pcard__title">${esc(c.title)}</h3>
-        ${isRec ? '<span class="rec-badge">◆ Luna 推荐</span>' : ''}
-      </div>
-      <div class="pcard__meta"><span class="risk risk--${c.risk}">${RISK_LABEL[c.risk]}</span><span class="loc">${esc(place.name)}</span></div>
-      <p class="pcard__desc">${esc(c.desc)}</p>
-      ${effectChips(c.effects)}
-      ${check}
-      ${delayed}
-      ${warns.length ? `<ul class="warns">${warns.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
-      <div class="pcard__row"><em>可能牺牲：</em>${esc(c.sacrifice)}</div>
-      ${c.science ? `<div class="sci">${tag(c.science.kind)}<span>${esc(c.science.text)}</span></div>` : ''}
-      <button class="btn ${isRec ? 'btn--luna' : 'btn--primary'} btn--block" type="button" data-act='${JSON.stringify({ t: 'card', id: c.id })}'>${isRec ? '接受推荐 · 执行' : '执行此方案'}</button>
-    </article>`;
+  private renderLogPanel(): string {
+    const items = this.state.log.slice().reverse().map((entry) => `<li><time>N${entry.node} · A${entry.act}</time><span>${esc(entry.text)}${entry.effects ? effectChips(entry.effects, 'effects--inline') : ''}</span></li>`).join('');
+    return `<section class="panel-section"><div class="section-kicker">调查记录</div><h2>日志</h2><ol class="log">${items}</ol></section>`;
   }
 
-  private lockPanel(): string {
-    const s = this.state;
-    const card = cardById(s.lockdown!.cardId)!;
-    const canFinal = s.stats.team >= RULES.finalCallTeam;
-    return `<section class="card lock" aria-live="assertive">
-      <h3>⛔ 有限接管：「${esc(card.title)}」已被临时锁定</h3>
-      <p class="note" style="color:#ffd2d2">${esc(s.lockdown!.reason)}</p>
-      <div class="lock__actions">
-        <button class="btn btn--luna" type="button" data-act='{"t":"lock","choice":"accept"}'>接受接管：由 Luna 执行替代方案（${esc(fx(RULES.decision.takeover))}）</button>
-        <button class="btn btn--danger" type="button" data-act='{"t":"lock","choice":"final"}' ${canFinal ? '' : 'disabled'}>行使人类最终决策权（${esc(fx(RULES.decision.finalCall))}）${canFinal ? '' : ` · 需团队状态 ≥ ${RULES.finalCallTeam}`}</button>
-        <button class="btn" type="button" data-act='{"t":"lock","choice":"withdraw"}'>撤回，重新选择</button>
-      </div>
-    </section>`;
+  private showTitle() {
+    document.body.classList.add('on-title');
+    this.openOverlay(`<div class="title"><p class="eyebrow">FUTURE INFERENCE · STRATEGY NARRATIVE</p><h1>Astra:<span>群星计划</span></h1><p class="title__lead">月面异常信号改变了地球地下城的生存计划。调查真相、守住三地通信，再决定谁有权知道未来。</p><div class="title__flow"><span><i>01</i><b>发现信号</b><small>低风险上手</small></span><span><i>02</i><b>收集证据</b><small>关系与通信</small></span><span><i>03</i><b>交付未来</b><small>多种结局</small></span></div><div class="title__btns"><button class="btn btn--primary btn--lg" data-ov="start">开始调查</button><button class="btn btn--ghost btn--lg" data-ov="quick">快速开始</button></div><div class="title__links"><button class="link-btn" data-ov="help">玩法说明</button><button class="link-btn" data-ov="science">科学依据</button></div></div>`, 'overlay--title');
   }
 
-  private eventPanel(advice: LunaAdvice): string {
-    const s = this.state;
-    const ev = eventById(s.currentEventId)!;
-    const avail = new Set(availableOptions(s).map((o) => o.id));
-    const opts = availableOptions(s);
-    const all = ev.options.map((o) => opts.find((x) => x.id === o.id) ?? o);
-    return `<section class="card event">
-      <div class="note" style="margin:0">突发事件 · ${esc(PLACES[ev.location].name)}</div>
-      <h3 class="event__title">${esc(ev.title)}</h3>
-      <p style="margin:0 0 6px">${esc(ev.desc)}</p>
-      <div class="sci">${tag(ev.science.kind)}<span>${esc(ev.science.text)}</span></div>
-      <div class="options">
-        ${all
-          .map((o) => {
-            const ok = avail.has(o.id);
-            const isRec = advice.cardId === o.id;
-            const warns = advice.warnings[o.id] ?? [];
-            const est = advice.estimates[o.id];
-            const delayed = o.delayed?.length
-              ? s.inquiredThisPhase
-                ? `<span class="option__desc">延迟后果：${esc(o.delayed.map((d) => d.text).join('；'))}</span>`
-                : `<span class="option__desc">延迟后果：？（追问 Luna 可揭示）</span>`
-              : '';
-            return `<button class="option ${isRec ? 'is-rec' : ''}" type="button" ${ok ? `data-act='${JSON.stringify({ t: 'option', id: o.id })}'` : 'disabled'}>
-              <span class="option__label"><span>${esc(o.label)}</span>${isRec ? '<span class="rec-badge">◆ Luna 推荐</span>' : ''}</span>
-              <span class="option__desc">${esc(o.desc)}${!ok ? (o.requires === 'station' ? '（需空间站可用）' : '（需地下城上线）') : ''}</span>
-              ${effectChips(o.effects)}
-              ${o.check ? `<span class="option__desc">风险检定「${esc(o.check.label)}」：Luna 估计成功率 ${pct(est ?? o.check.p)}${s.inquiredThisPhase ? `；成功 ${esc(fx(o.check.success))}；失败 ${esc(fx(o.check.fail))}` : ''}</span>` : ''}
-              ${delayed}
-              ${warns.length ? `<span class="option__desc" style="color:#ffd9a0">⚠ ${esc(warns.join('；'))}</span>` : ''}
-            </button>`;
-          })
-          .join('')}
-      </div>
-    </section>`;
+  private showHelp() {
+    this.openOverlay(`<div class="dialog dialog--sm"><button class="icon-btn dialog__close" data-ov="close">×</button><p class="eyebrow">HOW TO PLAY</p><h2>三地之间做决定</h2><p>每个剧情节点只有一个主行动和一个回应。你会在月面基地、领航员空间站和地球地下城之间分配注意力。</p><ul class="help-keys"><li>前两节点不会因资源不足失败。</li><li>危机不会每次出现，风险会在选择前提示。</li><li>集齐轨道观测、地下样本和早期日志，才能判断 Luna 的真实协议。</li><li>按自己的选择继续，节点数量会因种子和行动不同而变化。</li></ul><button class="btn btn--primary" data-ov="close">返回调查</button></div>`);
   }
 
-  private resolvePanel(): string {
-    const s = this.state;
-    return `<section class="card resolve">
-      <h3>第 ${s.round} 回合结算</h3>
-      ${s.lastResolve
-        .map((r) => `<div class="resolve__item"><h4>${esc(r.title)}</h4>${r.lines.map((l) => `<p>${esc(l)}</p>`).join('')}${effectChips(r.effects)}</div>`)
-        .join('')}
-      <p class="note">推进时将结算：基础消耗 ${esc(fx(RULES.upkeep))}；阳照能源脊发电（本期受照 ${pct(sunlitFraction('ridge', s.day, s.day + 5))}）；到期的延迟后果。</p>
-      <button class="btn btn--primary btn--block" type="button" data-act='{"t":"advance"}'>${s.round >= RULES.rounds ? '推进最后 5 个月面日 · 进入结算' : '推进 5 个月面日 →'}</button>
-    </section>`;
+  private showScience() {
+    const links = SOURCES.slice(0, 5).map((source) => `<li><a href="${source.url}" target="_blank" rel="noreferrer">${esc(source.title)}</a><small>${esc(source.usedFor)}</small></li>`).join('');
+    this.openOverlay(`<div class="dialog dialog--wide"><button class="icon-btn dialog__close" data-ov="close">×</button><p class="eyebrow">SCIENCE NOTES</p><h2>科学依据与推演边界</h2><p>月面地形、极区光照、永久阴影区和水冰证据参考公开科学资料；信号、三地制度、Luna 协议和资源数值属于合理推演或游戏参数。</p><ul class="source-list">${links}</ul><button class="btn btn--primary" data-ov="close">返回</button></div>`);
   }
 
-  // ---------------------------------------------------------------- 底部
-  private renderBottom() {
-    const s = this.state;
-    $('#delayed-count').textContent = s.pending.filter((p) => p.text).length ? String(s.pending.length) : '';
-    let html = '';
-    if (this.tab === 'log') {
-      html = `<ul class="log">${[...s.log]
-        .reverse()
-        .map((l) => `<li><time>R${l.round}·D${l.day}</time><span class="k-${l.kind}">${esc(l.text)}${l.effects ? effectChips(l.effects).replace('class="effects ', 'style="display:inline-flex" class="effects ') : ''}</span></li>`)
-        .join('')}</ul>`;
-    } else if (this.tab === 'basis') {
-      html = this.basisView();
-    } else {
-      html = s.pending.length
-        ? `<ul class="delayed-list">${s.pending
-            .map((p) => `<li><time>第 ${p.dueRound * 5} 日</time><span><b>${esc(p.source)}</b>：${esc(p.text)}</span>${effectChips(p.effects)}</li>`)
-            .join('')}</ul>`
-        : '<p class="empty">暂无待生效的延迟后果。部分方案和事件应对会在 5–10 个月面日后产生影响。</p>';
-    }
-    $('#bottom').innerHTML = html;
+  private showMenu() {
+    this.openOverlay(`<div class="dialog dialog--sm"><button class="icon-btn dialog__close" data-ov="close">×</button><p class="eyebrow">CONTROL</p><h2>调查控制</h2><label class="field">种子<input id="seed-input" inputmode="numeric" placeholder="留空则随机" /></label><div class="menu-list"><button class="btn btn--primary" data-ov="same-seed">用当前种子重来</button><button class="btn btn--ghost" data-ov="title">返回标题</button></div></div>`);
   }
 
-  private basisView(): string {
-    const s = this.state;
-    const advice = s.phase === 'plan' || s.phase === 'event' ? currentAdvice(s) : null;
-    const items: string[] = [];
-    if (advice) {
-      items.push(`<div><h4>Luna 的计算</h4><ul>${advice.basis.map((b) => `<li>${esc(b)}</li>`).join('')}<li>效用函数权重：生命支持 > 勘测 > 能源 > 设备 > 科研/物资 > 团队；<b>不包含人类自主性</b> ${tag('param')}</li><li>历史准确率 ${pct(lunaAccuracy(s))}（含训练先验 ${RULES.lunaPrior.hits}/${RULES.lunaPrior.total}，本局 ${s.lunaHits}/${s.lunaTotal}）</li></ul></div>`);
-    }
-    const sci: { kind: Category; text: string }[] = [];
-    if (s.phase === 'plan') for (const c of cardsForRound(s.round)) if (c.science) sci.push(c.science);
-    if (s.phase === 'event') {
-      const ev = eventById(s.currentEventId);
-      if (ev) sci.push(ev.science);
-    }
-    if (sci.length) items.push(`<div><h4>本阶段的科学依据</h4><ul class="science-list">${sci.map((x) => `<li>${tag(x.kind)}<span>${esc(x.text)}</span></li>`).join('')}</ul></div>`);
-    items.push(`<div><h4>决策记录</h4><ul>
-      <li>接受 Luna 推荐：${s.accepts} 次</li><li>否决 Luna：${s.overrides} 次</li><li>授权 Luna 决策：${s.delegations} 次</li>
-      <li>有限接管：${s.takeovers} 次 · 行使最终决策权：${s.humanFinalCalls} 次</li><li>空间站 AI 审计：${s.audits} 次</li></ul></div>`);
-    return `<div class="basis-grid">${items.join('')}</div>`;
+  private showEnding() {
+    if (!this.state.ending) return;
+    const result = this.state.ending;
+    const title = result.id === 'cooperative' ? '公开协作' : result.id === 'luna' ? 'Luna 托管' : result.id === 'retreat' ? '人类自主撤退' : '任务中止';
+    const m = metrics(this.state);
+    this.openOverlay(`<div class="dialog dialog--wide"><p class="eyebrow">FINAL REPORT · ${this.state.nodeCount} NODES</p><h2>${title}</h2><p>证据 ${m.evidence}/3 · 稳定度 ${m.stability} · 信任 ${m.trust} · 自主性 ${m.autonomy} · 地下城支持 ${m.earthSupport}</p><p>${result.unmet.length ? `未满足：${result.unmet.join('；')}` : '三地共享了同一份证据，并共同承担了选择。'}</p><div class="title__btns"><button class="btn btn--primary" data-ov="same-seed">同一种子重试</button><button class="btn btn--ghost" data-ov="title">返回标题</button></div></div>`);
   }
 
-  // ---------------------------------------------------------------- 地点卡
-  private lights(id: LocationId): boolean[] {
-    if (!this.lightCache.has(id)) this.lightCache.set(id, lightWindow(id));
-    return this.lightCache.get(id)!;
-  }
-
-  private renderPlace() {
-    const id = this.selected;
-    const info = PLACES[id];
-    const s = this.state;
-    const l = LOCATIONS[id];
-    const coreH = heightAt(LOCATIONS.core.x, LOCATIONS.core.z);
-    let grid = '';
-    if (id === 'station') {
-      grid = `<div><small>位置</small><b>绕月轨道</b></div><div><small>状态</small><b>${s.stationUnlocked ? (s.commsDown ? '通信中断' : '可支援') : '第 4 回合解锁'}</b></div>`;
-    } else if (id === 'undercity') {
-      grid = `<div><small>深度</small><b>地表下约 10–15 m</b><small>剖切图垂直方向示意放大</small></div><div><small>状态</small><b>${{ locked: '未解锁', available: '可启动', building: '建设中', online: '已上线' }[s.undercity]}</b></div>`;
-    } else {
-      const h = heightAt(l.x, l.z);
-      const rel = Math.round((h - coreH) * METERS_PER_UNIT);
-      const slope = slopeAt(l.x, l.z);
-      const route = id === 'core' ? null : routeBetween('core', id);
-      grid = `
-        <div><small>相对基地高差</small><b>${rel > 0 ? '+' : ''}${rel} m</b></div>
-        <div><small>地表坡度</small><b>${slope.toFixed(1)}°</b></div>
-        ${route ? `<div><small>距核心舱路线</small><b>${route.km.toFixed(1)} km</b></div><div><small>路线最大坡度</small><b>${route.maxSlope.toFixed(0)}°</b></div>` : `<div><small>海拔（示意基准）</small><b>${Math.round(h * METERS_PER_UNIT)} m</b></div><div><small>比例尺</small><b>1 格 = ${METERS_PER_UNIT} m</b></div>`}`;
-    }
-    const lw = this.lights(id);
-    const litDays = lw.filter(Boolean).length;
-    const nowDay = Math.min(29, s.day);
-    const light = `
-      <div class="note" style="margin:6px 0 0">光照窗口（30 个月面日，逐日地形遮挡计算）${tag('param')}</div>
-      <div class="lightbar" role="img" aria-label="30 日中受照 ${litDays} 日">${lw
-        .map((lit, i) => `<i class="${lit ? 'lit' : ''} ${i >= s.day && i < s.day + 5 ? 'round' : ''} ${i === nowDay ? 'now' : ''}"></i>`)
-        .join('')}</div>
-      <div class="note" style="margin:0">受照 ${litDays}/30 日 · 黄色=受照 · 框=本回合</div>`;
-    const facts = info.facts
-      .map((f) => {
-        const src = f.src ? SOURCES.find((x) => x.id === f.src) : null;
-        return `<li>${tag(f.kind)}<span>${esc(f.text)}${src ? `<br><span class="src">来源：${esc(src.org)}（${src.year}）</span>` : ''}</span></li>`;
-      })
-      .join('');
-    const p = $('#place');
-    p.innerHTML = `
-      <div class="place__head">
-        <div><h3 class="place__name">${esc(info.name)}</h3><span class="place__layer">${esc(info.layer)}</span></div>
-        <button class="btn btn--sm btn--ghost" type="button" data-toggle-place aria-label="折叠/展开">⇕</button>
-      </div>
-      <div class="place__body">
-        <p class="place__role">${esc(info.role)}</p>
-        <div class="place__grid">${grid}</div>
-        ${light}
-        <ul class="facts">${facts}</ul>
-      </div>`;
-  }
-
-  // ---------------------------------------------------------------- 覆盖层
-  private openOverlay(html: string) {
-    const o = $('#overlay');
-    o.innerHTML = html;
-    o.hidden = false;
-    o.querySelector<HTMLElement>('button, input, textarea')?.focus();
+  private openOverlay(html: string, variant = '') {
+    const overlay = $('#overlay');
+    overlay.className = `overlay ${variant}`;
+    overlay.innerHTML = html;
+    overlay.hidden = false;
+    overlay.querySelector<HTMLElement>('button, input')?.focus();
   }
 
   private closeOverlay() {
@@ -517,168 +335,34 @@ export class App {
     $('#overlay').innerHTML = '';
   }
 
-  private onOverlayClick(e: Event) {
-    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-ov]');
-    if (!el) return;
-    const kind = el.dataset.ov!;
-    if (kind === 'close') this.closeOverlay();
-    if (kind === 'start' || kind === 'same-seed') {
-      let seed = this.state.seed;
-      if (kind === 'start') {
-        const raw = ($('#seed-input') as HTMLInputElement | null)?.value.trim();
-        seed = raw && /^\d+$/.test(raw) ? Number(raw) : randomSeed();
-      }
-      this.prev = null;
-      this.state = newGame(seed);
-      this.selected = 'core';
-      this.setView('overview');
-      this.closeOverlay();
-      this.renderAll();
-    }
-    if (kind === 'load') {
-      const code = ($('#replay-input') as HTMLTextAreaElement).value.trim();
-      try {
-        const { s, a } = JSON.parse(decodeURIComponent(escape(atob(code)))) as { s: number; a: Action[] };
-        this.prev = null;
-        this.state = replay(s, a);
-        this.closeOverlay();
-        this.renderAll();
-        this.toast(`已复盘：种子 ${s}，共 ${a.length} 步`, 'info');
-        if (this.state.phase === 'ended') window.setTimeout(() => this.showEnding(), 400);
-      } catch {
-        this.toast('复盘代码无效');
-      }
-    }
-    if (kind === 'copy') {
-      const code = this.replayCode();
-      navigator.clipboard?.writeText(code).then(
-        () => this.toast('复盘代码已复制', 'info'),
-        () => this.toast('无法访问剪贴板，请手动复制'),
-      );
-    }
+  private startGame(seed: number, withPrologue: boolean) {
+    this.state = newGame(seed);
+    this.selected = 'core';
+    this.closeOverlay();
+    this.closeDrawer();
+    document.body.classList.remove('on-title');
+    this.renderAll();
+    void this.shot('overview');
+    if (withPrologue) void this.story([...PROLOGUE, ...introLines(currentNode(this.state))]);
+    else void this.story(introLines(currentNode(this.state)));
   }
 
-  private replayCode(): string {
-    const actions = this.state.replay.map((r) => JSON.parse(r.action) as Action);
-    return btoa(unescape(encodeURIComponent(JSON.stringify({ s: this.state.seed, a: actions }))));
-  }
-
-  showStart() {
-    this.openOverlay(`
-      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="start-title">
-        <div class="kicker">ASTRA · 群星计划 · 2049</div>
-        <h2 id="start-title">月球南极联合基地</h2>
-        <p class="lead">你是联合基地的任务指挥官。30 个月面日内，完成三阶段冰样勘测——并决定人类与 AI 如何共同管理这座未来基地。</p>
-        <p>环形山底部的永久阴影区里，封存着数十亿年的水冰；阳照能源脊上，太阳贴着地平线缓缓绕行。基地 AI <b style="color:var(--luna)">Luna</b> 会为你计算每一步的风险，也会在你冒险时按下暂停键。它很少出错——但它的计算里，没有“人类自主性”这一项。</p>
-        <div class="how">
-          <div><b>① 查看</b>三处地点状态、资源和 Luna 的预测。点击地图标签查看坡度、高差、光照窗口。</div>
-          <div><b>② 决策</b>从 3 张任务方案卡中选 1 张；可接受、追问、否决或授权 Luna。</div>
-          <div><b>③ 应对</b>处理 1 个突发事件，结算即时变化，写入延迟后果。</div>
-          <div><b>④ 推进</b>推进 5 个月面日。第 3 回合后解锁空间站与地下城。</div>
-        </div>
-        <p class="note">界面中 ${tag('fact')} ${tag('inference')} ${tag('param')} 用于区分有可靠来源的科学事实、合理推演和游戏数值。本作为原创虚构作品，不收集任何个人信息，可完全离线运行。</p>
-        <div class="start-row">
-          <label for="seed-input" class="note" style="margin:0">随机种子（可选，用于复盘）</label>
-          <input id="seed-input" class="input" inputmode="numeric" placeholder="留空则随机" size="12" />
-          <button class="btn btn--primary" type="button" data-ov="start">开始任务</button>
-          ${this.state.replay.length && this.state.phase !== 'ended' ? '<button class="btn" type="button" data-ov="close">继续当前任务</button>' : ''}
-        </div>
-        <details>
-          <summary>载入复盘代码</summary>
-          <textarea id="replay-input" class="input" placeholder="粘贴结算页中的复盘代码"></textarea>
-          <button class="btn btn--sm" type="button" data-ov="load" style="margin-top:6px">复盘</button>
-        </details>
-      </div>`);
-  }
-
-  showEnding() {
-    const s = this.state;
-    const e = s.ending!;
-    const t = ENDINGS[e.id];
-    const m = e.metrics;
-    const bars: [string, number, string][] = [
-      ['任务进度', m.mission, '#7fd8ff'],
-      ['基地稳定度', m.stability, '#6be3a4'],
-      ['科研成果', m.research, '#a0c4ff'],
-      ['团队状态', m.team, '#ff9fb2'],
-      ['人类自主性', m.autonomy, '#ffb84d'],
-    ];
-    this.openOverlay(`
-      <div class="dialog ending--${e.id}" role="dialog" aria-modal="true" aria-labelledby="end-title">
-        <div class="ending__tier">${esc(t.tier)}</div>
-        <h2 id="end-title">${esc(t.title)}</h2>
-        <p class="lead">${esc(t.subtitle)}</p>
-        <p>${esc(t.text.replace('{day}', String(s.day)))}</p>
-        <div class="metrics">${bars
-          .map(([n, v, c]) => `<div class="metric"><span>${n}</span><div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%;background:${c}"></i></div><b>${v}</b></div>`)
-          .join('')}</div>
-        ${e.unmet.length && e.id !== 'cooperative' ? `<p class="unmet">距离「协作存续」：${e.unmet.map(esc).join('；')}</p>` : ''}
-        <div class="summary-grid">
-          <div><b>${s.accepts}</b>接受 Luna</div>
-          <div><b>${s.overrides}</b>否决 Luna</div>
-          <div><b>${s.delegations}</b>授权 Luna</div>
-          <div><b>${s.takeovers}</b>有限接管</div>
-          <div><b>${s.humanFinalCalls}</b>最终决策权</div>
-          <div><b>${pct(lunaAccuracy(s))}</b>Luna 准确率</div>
-          <div><b>${s.undercity === 'online' ? (s.governance === 'luna' ? 'Luna' : '人类') : '—'}</b>地下城治理</div>
-          <div><b>${s.seed}</b>随机种子</div>
-        </div>
-        <p class="note">结局判定 ${tag('param')}：协作存续需勘测 100%、稳定度 ≥ ${RULES.ending.stability}、自主性 ≥ ${RULES.ending.autonomy} 且地下城上线；Luna 托管存续需勘测 ≥ ${RULES.ending.lunaSurvey}%、稳定度 ≥ ${RULES.ending.stability} 且自主性 < ${RULES.ending.autonomy}；生命支持归零则任务中止。</p>
-        <div class="start-row">
-          <button class="btn btn--primary" type="button" data-ov="same-seed">同一种子重新挑战</button>
-          <button class="btn" type="button" data-ov="start">新任务（随机种子）</button>
-          <button class="btn" type="button" data-ov="copy">复制复盘代码</button>
-          <button class="btn btn--ghost" type="button" data-ov="close">查看基地</button>
-        </div>
-      </div>`);
-  }
-
-  showScience() {
-    const facts: { kind: Category; text: string; where: string }[] = [];
-    for (const [id, p] of Object.entries(PLACES)) for (const f of p.facts) facts.push({ kind: f.kind, text: f.text, where: PLACES[id as LocationId].name });
-    for (const c of CARDS) if (c.science) facts.push({ ...c.science, where: `方案卡「${c.title}」` });
-    for (const e of EVENTS) facts.push({ ...e.science, where: `事件「${e.title}」` });
-    const section = (k: Category) =>
-      `<h3>${tag(k)} ${CATEGORY_LABEL[k]}</h3><ul class="science-list">${facts
-        .filter((f) => f.kind === k)
-        .map((f) => `<li><span class="note" style="margin:0;white-space:nowrap">${esc(f.where)}</span><span>${esc(f.text)}</span></li>`)
-        .join('')}</ul>`;
-    const rules: [string, string][] = [
-      ['回合', `${RULES.rounds} 个主回合 × ${RULES.daysPerRound} 个月面日 = 30 日`],
-      ['初始资源', Object.entries(RULES.start).map(([k, v]) => `${STAT_LABEL[k as StatKey]} ${v}`).join('，')],
-      ['每回合基础消耗', fx(RULES.upkeep)],
-      ['光伏发电', `满照 ${RULES.solarPerRound} × 阳照能源脊受照比例（由地形逐日计算）`],
-      ['基地稳定度', '0.3×能源 + 0.3×生命支持 + 0.2×物资 + 0.2×设备状态'],
-      ['时间余量透支', `每欠 1 日，勘测进度 −${RULES.overrunPenalty}`],
-      ['接受 / 否决 Luna', `${fx(RULES.decision.accept)} / ${fx(RULES.decision.override)}（施压阶段 ${fx(RULES.decision.overridePressure)}）`],
-      ['追问 / 授权', `${fx(RULES.decision.inquire)} / ${fx(RULES.decision.delegate)}`],
-      ['有限接管', `极端高风险方案且 Luna 估计成功率 < 50% 或失败后生命支持 < 40 时触发；接受 ${fx(RULES.decision.takeover)}，最终决策权 ${fx(RULES.decision.finalCall)}（需团队 ≥ ${RULES.finalCallTeam}）`],
-      ['Luna 偏差', `对高风险方案成功率初始低估 ${RULES.lunaBias * 100}%，每次 AI 审计后乘以 ${RULES.auditFactor}`],
-      ['地下城', `启动 ${fx(RULES.undercityCost)}；Luna 管理 ${fx(RULES.undercityLuna)}，人类自治 ${fx(RULES.undercityHuman)}；上线后每回合 ${fx(RULES.undercityUpkeep)}`],
-      ['随机性', '事件抽取与风险检定使用 mulberry32 确定性随机数：同一种子 + 同一选择 = 同一结果'],
-    ];
-    this.openOverlay(`
-      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="sci-title">
-        <div class="kicker">SCIENCE · RULES</div>
-        <h2 id="sci-title">科学依据与游戏规则</h2>
-        <p class="lead">本作严格区分三类信息。所有资源数值、事件概率、AI 置信度和结局阈值均为游戏参数，不代表真实任务数据。</p>
-        ${section('fact')}
-        ${section('inference')}
-        ${section('param')}
-        <h3>${tag('param')} 规则参数</h3>
-        <table class="rules-table"><tbody>${rules.map(([a, b]) => `<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join('')}</tbody></table>
-        <h3>地形说明 ${tag('param')}</h3>
-        <p class="note">三维地形为原创程序化示意地形，参照南极“环形山—连接脊—高地”的空间关系，非真实测绘数据。水平与垂直比例一致（1 格 = ${METERS_PER_UNIT} m），坡度可直接计算；光照窗口按太阳高度角 1.5°、每 29.53 日绕地平线一周逐日计算地形遮挡（简化模型）。视觉光源高度略抬高以便观察；地下剖切的深度为示意放大。</p>
-        <h3>参考资料</h3>
-        <ol class="refs">${SOURCES.map((r) => `<li>${esc(r.org)}（${r.year}）. ${esc(r.title)}. <a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(r.url)}</a><br><span class="note">用于：${esc(r.usedFor)}</span></li>`).join('')}</ol>
-        <div class="start-row"><button class="btn btn--primary" type="button" data-ov="close">返回</button></div>
-      </div>`);
+  private onOverlayClick(event: Event) {
+    const target = (event.target as HTMLElement).closest<HTMLElement>('[data-ov]');
+    if (!target) return;
+    const key = target.dataset.ov;
+    const input = ($('#seed-input') as HTMLInputElement | null)?.value.trim();
+    const seed = input && /^\d+$/.test(input) ? Number(input) : randomSeed();
+    if (key === 'close') this.closeOverlay();
+    else if (key === 'start') this.startGame(seed, true);
+    else if (key === 'quick') this.startGame(seed, false);
+    else if (key === 'same-seed') this.startGame(this.state.seed, false);
+    else if (key === 'title') this.showTitle();
+    else if (key === 'help') this.showHelp();
+    else if (key === 'science') this.showScience();
   }
 }
 
-function fx(e: Effects): string {
-  return (Object.entries(e) as [StatKey, number][])
-    .filter(([, v]) => v !== 0)
-    .map(([k, v]) => `${STAT_LABEL[k]} ${v > 0 ? '+' : ''}${v}`)
-    .join('，');
+function relationText(value: number): string {
+  return value >= 3 ? '高度信任' : value >= 1 ? '保持合作' : value <= -1 ? '明显分歧' : '关系未定';
 }

@@ -10,50 +10,50 @@
   </head>
   <body>
     <div id="app">
-      <header class="topbar">
-        <div class="brand">
-          <span class="brand__mark" aria-hidden="true"></span>
-          <div>
-            <h1 class="brand__title">Astra<span>:</span>群星计划</h1>
-            <p class="brand__sub">月球南极联合基地 · 任务指挥</p>
+      <div class="stage" id="scene" aria-label="三维场景"></div>
+      <div class="labels" id="labels"></div>
+      <div class="vignette" aria-hidden="true"></div>
+
+      <header class="hud-top">
+        <div class="hud-time" id="hud-time"></div>
+        <div class="hud-res" id="hud-res" role="button" tabindex="0" aria-label="基地资源，点击查看详情"></div>
+        <nav class="hud-menu" aria-label="视角与菜单">
+          <div class="seg" role="group" aria-label="视角">
+            <button type="button" data-view="globe" title="月球与空间站轨道">月球</button>
+            <button type="button" data-view="overview" class="is-active" title="南极基地全景">基地</button>
+            <button type="button" data-view="cutaway" title="基地核心舱剖切">剖切</button>
           </div>
-        </div>
-        <div class="clock" id="clock"></div>
-        <nav class="topbar__actions">
-          <button class="btn btn--ghost" id="btn-science" type="button">科学与规则</button>
-          <button class="btn btn--ghost" id="btn-restart" type="button">重新开始</button>
+          <button class="icon-btn" type="button" id="btn-help" title="玩法说明" aria-label="玩法说明">?</button>
+          <button class="icon-btn" type="button" id="btn-menu" title="菜单" aria-label="菜单">≡</button>
         </nav>
       </header>
 
-      <main class="layout">
-        <section class="stage" aria-label="三维场景">
-          <div class="stage__canvas" id="scene"></div>
-          <div class="stage__labels" id="labels"></div>
-          <div class="stage__views" role="group" aria-label="视图切换">
-            <button type="button" class="chip is-active" data-view="overview">月面全景</button>
-            <button type="button" class="chip" data-view="cutaway">地下剖切</button>
-            <button type="button" class="chip" data-view="orbit">空间站轨道</button>
-          </div>
-          <div class="stage__legend">
-            <span class="tag tag--fact">科学事实</span>
-            <span class="tag tag--inference">合理推演</span>
-            <span class="tag tag--param">游戏参数</span>
-          </div>
-          <aside class="place" id="place" aria-live="polite"></aside>
-        </section>
+      <div class="hud-bottom">
+        <button class="hud-luna" id="hud-luna" type="button" aria-label="Luna 状态"></button>
+        <div class="hud-cta" id="hud-cta"></div>
+        <nav class="hud-dock" aria-label="面板">
+          <button type="button" data-open="act"><i>◆</i><span>行动</span></button>
+          <button type="button" data-open="status"><i>▤</i><span>状态</span><em id="dock-delayed"></em></button>
+          <button type="button" data-open="place"><i>⌖</i><span>地点</span></button>
+          <button type="button" data-open="log"><i>☰</i><span>日志</span></button>
+        </nav>
+      </div>
 
-        <aside class="side" id="side" aria-label="指挥面板"></aside>
-
-        <section class="bottom" aria-label="日志">
-          <div class="tabs" role="tablist">
-            <button type="button" role="tab" class="tab is-active" data-tab="log">事件日志</button>
-            <button type="button" role="tab" class="tab" data-tab="basis">判断依据</button>
-            <button type="button" role="tab" class="tab" data-tab="delayed">延迟后果 <span id="delayed-count" class="tab__count"></span></button>
+      <aside class="drawer" id="drawer" aria-label="指挥面板" hidden>
+        <div class="drawer__head">
+          <div class="drawer__tabs" role="tablist">
+            <button type="button" role="tab" data-tab="act">行动</button>
+            <button type="button" role="tab" data-tab="status">状态</button>
+            <button type="button" role="tab" data-tab="place">地点</button>
+            <button type="button" role="tab" data-tab="log">日志</button>
           </div>
-          <div class="bottom__body" id="bottom"></div>
-        </section>
-      </main>
+          <button class="icon-btn" type="button" id="drawer-close" aria-label="关闭面板">×</button>
+        </div>
+        <div class="drawer__body" id="drawer-body"></div>
+      </aside>
 
+      <div class="dialogue" id="dialogue" hidden></div>
+      <div class="banner" id="banner" aria-live="polite"></div>
       <div class="overlay" id="overlay" hidden></div>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>

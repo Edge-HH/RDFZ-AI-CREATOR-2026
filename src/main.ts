@@ -1,4 +1,5 @@
 import './styles.css';
+import './hud.css';
 import { createScene, type SceneApi } from './scene/scene';
 import { App } from './ui/app';
 

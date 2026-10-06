@@ -19,7 +19,7 @@ export interface WorldLocation {
   id: LocationId;
   x: number;
   z: number;
-  /** 高出地面的偏移（空间站在轨道上；地下城在地表以下） */
+  /** 高出地面的偏移（空间站在轨道上；剖切示意使用负值） */
   yOffset: number;
 }
 
