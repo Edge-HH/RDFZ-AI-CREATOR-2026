@@ -344,12 +344,35 @@ export function makeMoonTexture(): THREE.CanvasTexture {
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(small, 0, 0, W, H);
 
-  // 撞击坑：暗色坑底 + 亮色坑缘
+  // 月海：用较宽、低对比的色块形成真实月面常见的深色玄武岩区域。
+  // 颜色贴图只负责材质色，坑的主要深度由 makeMoonGeometry 提供，避免缩略图出现“泡泡纹”。
   let seed = 99;
   const rnd = () => {
     seed = (seed * 1664525 + 1013904223) >>> 0;
     return seed / 4294967296;
   };
+  for (let i = 0; i < 22; i++) {
+    const cx = rnd() * W;
+    const cy = H * (0.16 + rnd() * 0.68);
+    const rx = 48 + rnd() * 150;
+    const ry = rx * (0.55 + rnd() * 0.35);
+    for (const off of [0, -W, W]) {
+      ctx.save();
+      ctx.translate(cx + off, cy);
+      const g = ctx.createRadialGradient(0, 0, rx * 0.12, 0, 0, rx);
+      g.addColorStop(0, 'rgba(38,37,35,0.11)');
+      g.addColorStop(0.72, 'rgba(44,43,41,0.07)');
+      g.addColorStop(1, 'rgba(44,43,41,0)');
+      ctx.scale(1, ry / rx);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, rx, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // 撞击坑：暗色坑底 + 极弱的亮色坑缘，保留层次但不画成一圈圈白边。
   const crater = (cx: number, cy: number, r: number) => {
     const lat = (0.5 - cy / H) * Math.PI;
     const sx = 1 / Math.max(0.15, Math.cos(lat));
@@ -360,10 +383,10 @@ export function makeMoonTexture(): THREE.CanvasTexture {
       ctx.translate(x, cy);
       ctx.scale(sx, 1);
       const g = ctx.createRadialGradient(-r * 0.15, -r * 0.15, 0, 0, 0, r);
-      g.addColorStop(0, 'rgba(40,38,35,0.24)');
-      g.addColorStop(0.7, 'rgba(40,38,35,0.13)');
-      g.addColorStop(0.86, 'rgba(255,252,240,0.16)');
-      g.addColorStop(1, 'rgba(255,252,240,0)');
+      g.addColorStop(0, 'rgba(38,37,35,0.17)');
+      g.addColorStop(0.62, 'rgba(38,37,35,0.09)');
+      g.addColorStop(0.84, 'rgba(235,232,223,0.07)');
+      g.addColorStop(1, 'rgba(235,232,223,0)');
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, Math.PI * 2);
@@ -371,8 +394,8 @@ export function makeMoonTexture(): THREE.CanvasTexture {
       ctx.restore();
     }
   };
-  for (let i = 0; i < 2600; i++) {
-    const r = 1.5 + Math.pow(rnd(), 4) * 48;
+  for (let i = 0; i < 900; i++) {
+    const r = 1.5 + Math.pow(rnd(), 3.5) * 44;
     const y = Math.acos(1 - 2 * rnd()) / Math.PI;
     crater(rnd() * W, y * H, r);
   }

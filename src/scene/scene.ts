@@ -22,10 +22,12 @@ const SKIRT = 240;
 /** 地球方向（从月心看），使基地看到的地球贴近地平线 */
 const EARTH_DIR = new THREE.Vector3(-0.6, 0.21, -0.78).normalize();
 const EARTH_POS = MOON_C.clone().addScaledVector(EARTH_DIR, 12000);
+const EARTH_R = 820;
 /** 全景视图中相机所在的水平方向 */
 const VIEW_H = new THREE.Vector3(0.75, 0, 0.66).normalize();
 const ORBIT_K = new THREE.Vector3().crossVectors(VIEW_H, new THREE.Vector3(0, 1, 0)).normalize();
-const STATION_ORBIT_R = MOON_R + 300;
+/** 领航员空间站位于地球近地轨道；轨道半径为视觉示意比例。 */
+const STATION_ORBIT_R = EARTH_R + 360;
 
 export type ViewMode = 'globe' | 'overview' | 'cutaway';
 export type Shot = 'earthmoon' | 'globe' | 'descent' | 'overview' | 'cutaway' | 'station' | `loc:${LocationId}`;
@@ -143,6 +145,25 @@ function safeFlightPosition(
   return out.copy(MOON_C).addScaledVector(direction, radius);
 }
 
+/** 把镜头抬到局部地形之上，防止切换剖切/地点镜头时钻进山脊或月壤。 */
+function keepCameraAboveTerrain(position: THREE.Vector3): void {
+  if (Math.max(Math.abs(position.x), Math.abs(position.z)) > SKIRT + 24) return;
+  const terrainFloor = vh(position.x, position.z) + 10;
+  if (position.y < terrainFloor) position.y = terrainFloor;
+}
+
+/** 交互缩放也不能把镜头推进月球实体内部。 */
+function keepCameraOutsideMoon(position: THREE.Vector3): void {
+  const offset = position.clone().sub(MOON_C);
+  const distance = offset.length();
+  const minRadius = MOON_R + CAMERA_CLEARANCE;
+  if (distance < minRadius) {
+    if (distance < 1e-4) offset.set(0, 1, 0);
+    offset.setLength(minRadius);
+    position.copy(MOON_C).add(offset);
+  }
+}
+
 export function createScene(container: HTMLElement, labelLayer: HTMLElement): SceneApi {
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -222,6 +243,7 @@ export function createScene(container: HTMLElement, labelLayer: HTMLElement): Sc
 
   // ---------- 月球球体 ----------
   const moonTex = makeMoonTexture();
+  // 球体和月面工作区共用一张月壤贴图，避免两个区域出现明显不同的纹理语言。
   const moonMat = new THREE.MeshStandardMaterial({ map: moonTex, bumpMap: moonTex, bumpScale: 1.6, roughness: 1, metalness: 0 });
   const moon = new THREE.Mesh(makeMoonGeometry(MOON_R - 2.5), moonMat);
   moon.position.copy(MOON_C);
@@ -230,7 +252,7 @@ export function createScene(container: HTMLElement, labelLayer: HTMLElement): Sc
   scene.add(moon);
 
   // ---------- 局部地形（非均匀网格：中心高精度，裙边渐疏） ----------
-  const terrainMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.97, metalness: 0, flatShading: true, side: THREE.DoubleSide });
+  const terrainMat = new THREE.MeshStandardMaterial({ map: moonTex, bumpMap: moonTex, bumpScale: 0.8, color: 0xffffff, roughness: 0.97, metalness: 0, flatShading: false, side: THREE.DoubleSide });
   const terrain = (() => {
     const axis: number[] = [];
     const inner = 150;
@@ -241,16 +263,15 @@ export function createScene(container: HTMLElement, labelLayer: HTMLElement): Sc
     const xs = [...outer.map((v) => -v).reverse(), ...axis, ...outer];
     const N = xs.length;
     const pos: number[] = [];
-    const col: number[] = [];
-    const rnd = mulberry(11);
+    const uv: number[] = [];
     for (let j = 0; j < N; j++)
       for (let i = 0; i < N; i++) {
         const x = xs[i];
         const z = xs[j];
         const h = localHeight(x, z);
         pos.push(x, h + drop(x, z), z);
-        const base = 0.42 + (h + 20) * 0.006 + (rnd() - 0.5) * 0.05;
-        col.push(base * 0.98, base * 0.96, base * 0.93);
+        // 平面 UV 只取月球贴图的中段，避免工作区出现拉伸或接缝。
+        uv.push(0.5 + x / (WORLD_SIZE * 3.3), 0.5 + z / (WORLD_SIZE * 3.3));
       }
     const idx: number[] = [];
     for (let j = 0; j < N - 1; j++)
@@ -263,7 +284,7 @@ export function createScene(container: HTMLElement, labelLayer: HTMLElement): Sc
       }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     g.setIndex(idx);
     const flat = g.toNonIndexed();
     flat.computeVertexNormals();
@@ -534,7 +555,7 @@ export function createScene(container: HTMLElement, labelLayer: HTMLElement): Sc
   under.visible = false;
   scene.add(under);
 
-  // ---------- 领航员空间站（绕月极轨道） ----------
+  // ---------- 领航员空间站（地球近地轨道） ----------
   const station = new THREE.Group();
   const stationShell = whiteShell.clone();
   const stationLights: THREE.Mesh[] = [];
@@ -617,13 +638,12 @@ export function createScene(container: HTMLElement, labelLayer: HTMLElement): Sc
     stationGlow.scale.setScalar(52);
     station.add(core, node, collarA, collarB, innerRing, outerRing, ...spokes, ...ringModules, dockingA, dockingB, stationGlow);
   }
-  // 视觉比例做了适度夸张：月球全景需要能直接辨认空间站的结构，
-  // 但仍保留与月球的轨道距离和相对位置。
-  station.scale.setScalar(10);
+  // 地球轨道远景中保持比地球小一档，避免空间站喧宾夺主。
+  station.scale.setScalar(7);
   shadow(station);
   scene.add(station);
   const orbitAt = (a: number) =>
-    MOON_C.clone()
+    EARTH_POS.clone()
       .addScaledVector(UP, Math.cos(a) * STATION_ORBIT_R)
       .addScaledVector(ORBIT_K, Math.sin(a) * STATION_ORBIT_R);
   const orbitMat = new THREE.LineDashedMaterial({ color: 0x8fb4ff, dashSize: 60, gapSize: 50, transparent: true, opacity: 0.35, depthWrite: false });
@@ -671,9 +691,14 @@ export function createScene(container: HTMLElement, labelLayer: HTMLElement): Sc
       case 'globe':
         return { pos: MOON_C.clone().addScaledVector(VIEW_H, 4300).addScaledVector(UP, 2100), target: MOON_C.clone().addScaledVector(UP, 250), up: DOWN.clone() };
       case 'station':
-        return { pos: MOON_C.clone().addScaledVector(VIEW_H, 3600).addScaledVector(UP, 3000), target: MOON_C.clone().addScaledVector(UP, 900), up: DOWN.clone() };
+        return {
+          pos: EARTH_POS.clone().addScaledVector(VIEW_H, 2600).addScaledVector(UP, 1800),
+          target: EARTH_POS.clone().addScaledVector(UP, 160),
+          up: DOWN.clone(),
+        };
       case 'cutaway':
-        return { pos: new THREE.Vector3(coreP.x + 18, coreP.y + 14, CUT_Z + 78), target: new THREE.Vector3(coreP.x, coreP.y - 10, CUT_Z), up: UP.clone() };
+        // 镜头保持在月面上方并拉开距离，让剖切层和核心舱同时进入画面。
+        return { pos: new THREE.Vector3(coreP.x + 28, coreP.y + 42, CUT_Z + 112), target: new THREE.Vector3(coreP.x, coreP.y - 8, CUT_Z), up: UP.clone() };
       case 'overview':
       case 'descent':
         return { pos: new THREE.Vector3(64, 24, 124), target: coreP.clone().addScaledVector(UP, 5), up: UP.clone() };
@@ -703,6 +728,8 @@ export function createScene(container: HTMLElement, labelLayer: HTMLElement): Sc
     clipping = cut ? [clipPlane] : [];
     terrainMat.clippingPlanes = clipping;
     moonMat.clippingPlanes = clipping;
+    // 剖切视角展示的是剖面示意；隐藏完整地表，避免前景月壤遮住地下模块。
+    terrain.visible = !cut;
     section.visible = cut;
     under.visible = cut;
     for (const r of routes.values()) (r.material as THREE.Material).clippingPlanes = clipping;
@@ -727,6 +754,8 @@ export function createScene(container: HTMLElement, labelLayer: HTMLElement): Sc
 
   function finishTween(tw: Tween) {
     camera.position.copy(tw.to.pos);
+    keepCameraOutsideMoon(camera.position);
+    if (view !== 'globe') keepCameraAboveTerrain(camera.position);
     camera.quaternion.copy(tw.toQ);
     camera.up.copy(tw.to.up);
     if (tw.to.up.y > 0.5) {
@@ -827,11 +856,15 @@ export function createScene(container: HTMLElement, labelLayer: HTMLElement): Sc
       tw.t = Math.min(1, tw.t + dt / tw.dur);
       const k = ease(tw.t);
       safeFlightPosition(tw.fromPos, tw.to.pos, k, tmp, flightFromDir, flightToDir, flightDirection, flightAxis);
+      keepCameraOutsideMoon(tmp);
+      if (view !== 'globe') keepCameraAboveTerrain(tmp);
       camera.position.copy(tmp);
       camera.quaternion.slerpQuaternions(tw.fromQ, tw.toQ, ease(Math.min(1, tw.t * 1.15)));
       if (tw.t >= 1) finishTween(tw);
     } else if (interactive) {
       controls.update();
+      keepCameraOutsideMoon(camera.position);
+      if (view !== 'globe') keepCameraAboveTerrain(camera.position);
     }
 
     // 近裁剪面保持较小，避免远景运镜下降时把月面和基地整体裁掉。

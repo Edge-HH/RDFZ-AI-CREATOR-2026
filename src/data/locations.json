@@ -42,7 +42,7 @@
     "layer": "领航员空间站",
     "role": "第 3 回合后解锁：补给投放、AI 审计、数据上行与伤员后送。",
     "facts": [
-      { "kind": "inference", "text": "参照 NASA 月球门户（Gateway）构想的绕月空间站，作为通信与补给节点——属合理推演。", "src": "gateway" },
+      { "kind": "inference", "text": "采用地球近地轨道空间站设定，外形综合参考现实国际空间站与《流浪地球》的科幻设计，作为通信与补给节点——属合理推演。", "src": null },
       { "kind": "param", "text": "补给量、审计对 Luna 偏差的校正幅度为游戏参数。", "src": null }
     ]
   },

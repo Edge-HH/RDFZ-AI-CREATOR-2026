@@ -15,7 +15,7 @@ AI 回答不作为事实来源。作品中的科学事实回到 NASA 资料和�
 - 月球南极的低太阳高度角、长期光照高地、永久阴影区和复杂地形：NASA [South Pole](https://science.nasa.gov/moon/south-pole/) 与 [月球南极区域环境](https://www.nasa.gov/reference/moonbase-environment/)；
 - 月球极区的极低温和水冰证据：NASA [Moon Weather](https://science.nasa.gov/moon/weather-on-the-moon/)、LCROSS 论文和 Diviner 温度研究；
 - 月球水冰分布不均匀、需要多点采样：Li 等，PNAS 2018；
-- 绕月空间站的功能参照 NASA [Gateway](https://www.nasa.gov/mission/gateway/)；
+- 领航员空间站采用地球近地轨道设定，外形参考《流浪地球》的科幻轨道空间站与现实国际空间站的综合推演；
 - 月面程序化地形和光照窗口是原创示意模型，不是实际测绘数据。
 
 月球不设置地下城。游戏中的地下城位于地球，属于未来推演设定；月面场景的“基地核心舱剖切”只表示月面基地内部结构示意。

@@ -80,11 +80,11 @@
     "usedFor": "轨道测绘数据（地形、温度、光照）的来源说明"
   },
   {
-    "id": "gateway",
-    "title": "Gateway（月球门户空间站）",
+    "id": "iss",
+    "title": "International Space Station（ISS）",
     "org": "NASA",
     "year": 2024,
-    "url": "https://www.nasa.gov/mission/gateway/",
-    "usedFor": "领航员空间站的原型参照（本作为合理推演，项目进展以官方信息为准）"
+    "url": "https://www.nasa.gov/international-space-station/",
+    "usedFor": "地球近地轨道空间站的现实参照（领航员空间站外形与能力属于合理推演）"
   }
 ]
