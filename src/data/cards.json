@@ -1,0 +1,251 @@
+[
+  {
+    "id": "r1-solar",
+    "round": 1,
+    "title": "沿阳照脊铺设光伏阵列",
+    "location": "ridge",
+    "desc": "先把能源打牢：在阳照能源脊上展开竖立式光伏板，为后续冷区作业储备电力。",
+    "risk": "low",
+    "effects": { "energy": 18, "equipment": -3, "margin": -1, "research": 2 },
+    "delayed": [{ "in": 1, "effects": { "energy": 4 }, "text": "光伏阵列满功率运行，额外储能 +4" }],
+    "hint": "后续回合可能有额外收益",
+    "sacrifice": "推迟首次采样，勘测进度暂不增加",
+    "science": { "kind": "fact", "text": "月球自转轴相对黄道仅倾斜约 1.5°，南极附近太阳贴着地平线移动，高处的脊线和峰顶可获得长时间光照。" }
+  },
+  {
+    "id": "r1-dash",
+    "round": 1,
+    "title": "直入永久阴影区首次勘测",
+    "location": "psr",
+    "desc": "趁设备崭新，派勘测车沿最短路线下到环形山底部，抢先取得第一批冰样。",
+    "risk": "high",
+    "effects": { "survey": 20, "energy": -12, "equipment": -5, "team": -4 },
+    "check": {
+      "p": 0.7,
+      "label": "陡坡下行",
+      "success": { "research": 4 },
+      "fail": { "equipment": -10, "survey": -8 },
+      "successText": "勘测车稳稳抵达坑底，冰样完整。",
+      "failText": "陡坡打滑，机械臂受损，部分样品作废。"
+    },
+    "sacrifice": "设备磨损与团队疲劳",
+    "science": { "kind": "fact", "text": "永久阴影区长期照不到阳光，温度可低至约 40 K（约 −233 °C）量级，是水冰得以长期保存的“冷阱”。" }
+  },
+  {
+    "id": "r1-route",
+    "round": 1,
+    "title": "规划缓坡绕行勘测路线",
+    "location": "core",
+    "desc": "用轨道地形数据规划一条绕开陡坡的路线，走得慢一些，但车辆和人员都更安全。",
+    "risk": "low",
+    "effects": { "survey": 10, "margin": -1, "energy": -4 },
+    "delayed": [{ "in": 1, "effects": { "equipment": 5 }, "text": "缓坡路线降低磨损，设备 +5", "flag": "safeRoute" }],
+    "flags": ["safeRoute"],
+    "hint": "可能降低后续设备故障概率",
+    "sacrifice": "多消耗 1 个月面日的时间余量",
+    "science": { "kind": "inference", "text": "绕行会增加路线距离和时间，但可避开坡度超过 25° 的危险段（坡度阈值为游戏参数）。" }
+  },
+  {
+    "id": "r2-drill",
+    "round": 2,
+    "title": "钻取表层冰样（阶段一）",
+    "location": "psr",
+    "desc": "在采样点布设钻机，取得 1 米以内的含冰月壤岩芯。",
+    "risk": "mid",
+    "effects": { "survey": 18, "research": 6, "energy": -10, "equipment": -5 },
+    "sacrifice": "能源储备下降",
+    "science": { "kind": "fact", "text": "2009 年 LCROSS 撞击卡比厄斯环形山，在溅射物中探测到水，证实南极永久阴影区存在水冰。" }
+  },
+  {
+    "id": "r2-cold",
+    "round": 2,
+    "title": "建设样品冷链仓库",
+    "location": "core",
+    "desc": "在核心舱旁建成低温样品库，保证冰样运回途中不升华。",
+    "risk": "low",
+    "effects": { "research": 5, "energy": -8, "supplies": -5, "survey": 6 },
+    "delayed": [{ "in": 1, "effects": { "research": 9 }, "text": "样品保存完好，分析结果可信度提高，科研 +9" }],
+    "hint": "样品保存质量可能在之后体现",
+    "sacrifice": "物资与能源投入大，勘测推进慢",
+    "science": { "kind": "inference", "text": "冰样一旦离开冷阱就可能升华或被污染，保存链条是科研可信度的关键（推演）。" }
+  },
+  {
+    "id": "r2-rest",
+    "round": 2,
+    "title": "队员轮休与心理支持",
+    "location": "core",
+    "desc": "高强度着陆期后安排轮休，组织与地面家人的视频通话。",
+    "risk": "low",
+    "effects": { "team": 12, "life": 2, "margin": -1, "survey": 4 },
+    "delayed": [{ "in": 2, "effects": { "team": 4, "research": 3 }, "text": "休整后的团队效率提升，团队 +4、科研 +3" }],
+    "hint": "团队状态的收益可能延续",
+    "sacrifice": "本回合勘测几乎停滞",
+    "science": { "kind": "inference", "text": "长期隔离任务中，作息和心理支持影响团队表现（参考载人航天经验的合理推演）。" }
+  },
+  {
+    "id": "r3-deep",
+    "round": 3,
+    "title": "深层钻探 2 米冰层（阶段二）",
+    "location": "psr",
+    "desc": "在永久阴影区最冷处钻到 2 米深，获取不受太阳风改造的原始冰层。",
+    "risk": "high",
+    "effects": { "survey": 24, "research": 8, "energy": -14, "equipment": -8 },
+    "check": {
+      "p": 0.6,
+      "label": "深冷钻进",
+      "success": { "research": 6 },
+      "fail": { "life": -8, "team": -6, "equipment": -6 },
+      "successText": "岩芯完整，冰层分层清晰。",
+      "failText": "钻杆在极低温下卡死，抢修时一名队员服装加热器故障。"
+    },
+    "sacrifice": "能源和设备大量消耗，存在人员风险",
+    "science": { "kind": "fact", "text": "极低温会使金属和润滑剂性能改变；永久阴影区的长期低温已由月球勘测轨道器（LRO）Diviner 测得。" }
+  },
+  {
+    "id": "r3-robot",
+    "round": 3,
+    "title": "Luna 主导机器人远程采样",
+    "location": "psr",
+    "desc": "由 Luna 远程调度采样机器人进入阴影区，人员留在基地监控。",
+    "risk": "low",
+    "effects": { "survey": 17, "energy": -7, "autonomy": -5, "trust": 3 },
+    "sacrifice": "人类对采样过程的直接控制（自主性 −5）",
+    "science": { "kind": "inference", "text": "遥操作和自主机器人可降低人员暴露风险，但决策权向 AI 转移（推演）。" }
+  },
+  {
+    "id": "r3-save",
+    "round": 3,
+    "title": "基地维护与节能周",
+    "location": "core",
+    "desc": "关停非必要负载，集中维护设备。舱内温度调低，大家裹着保温毯工作。",
+    "risk": "low",
+    "effects": { "energy": 12, "equipment": 8 },
+    "delayed": [{ "in": 1, "effects": { "team": -7, "research": -3 }, "text": "长时间低功耗导致舱内寒冷，团队 −7、科研 −3" }],
+    "hint": "省下的能源可能要用别的代价偿还",
+    "sacrifice": "团队舒适度与科研进度",
+    "science": { "kind": "param", "text": "节能幅度与团队状态下降值均为游戏参数。" }
+  },
+  {
+    "id": "r4-night",
+    "round": 4,
+    "title": "夜间穿越阴影区（极端高风险）",
+    "location": "psr",
+    "desc": "利用通信窗口，连夜穿越三处相连的阴影区，一次取得大量样品。",
+    "risk": "extreme",
+    "effects": { "survey": 28, "research": 10, "energy": -14, "life": -8 },
+    "check": {
+      "p": 0.5,
+      "label": "长距离阴影穿越",
+      "success": { "research": 4 },
+      "fail": { "life": -14, "equipment": -12, "team": -8 },
+      "successText": "车队全员返回，样品舱满载。",
+      "failText": "一辆车在阴影中断电，车队拖拽返回，生命支持大量消耗。"
+    },
+    "sacrifice": "生命支持安全余量",
+    "science": { "kind": "fact", "text": "阴影区没有太阳能可用，车辆只能依靠电池和加热器维持，作业时间受严格限制。" }
+  },
+  {
+    "id": "r4-short",
+    "round": 4,
+    "title": "分批短程采样",
+    "location": "psr",
+    "desc": "把大任务拆成多次短程往返，每次都在电池余量充足时返回。",
+    "risk": "mid",
+    "effects": { "survey": 16, "energy": -8, "team": -3, "margin": -1 },
+    "sacrifice": "时间余量和队员体力",
+    "science": { "kind": "inference", "text": "短程往返降低单次风险，但增加总里程和时间（推演）。" }
+  },
+  {
+    "id": "r4-lab",
+    "round": 4,
+    "title": "冰样同位素分析",
+    "location": "core",
+    "desc": "在实验舱分析氢、氧同位素比例，判断冰的来源是彗星、太阳风还是月球内部。",
+    "risk": "low",
+    "effects": { "research": 15, "energy": -6, "supplies": -4, "survey": 5 },
+    "sacrifice": "勘测推进较慢",
+    "science": { "kind": "fact", "text": "月球水的来源（彗星/小行星撞击、太阳风注入、火山脱气）仍是科学界研究中的问题，同位素是重要线索。" }
+  },
+  {
+    "id": "r5-full",
+    "round": 5,
+    "title": "第三阶段全面钻探",
+    "location": "psr",
+    "desc": "在三处采样点同时作业，完成冰样分布测绘。",
+    "risk": "high",
+    "effects": { "survey": 24, "research": 8, "energy": -14, "equipment": -8, "team": -5 },
+    "check": {
+      "p": 0.65,
+      "label": "多点同步作业",
+      "success": { "survey": 4 },
+      "fail": { "equipment": -10, "life": -6 },
+      "successText": "三点数据互相印证，冰样分布图完成。",
+      "failText": "一处钻机失压，抢修消耗了生命支持储备。"
+    },
+    "sacrifice": "设备、能源与团队体力",
+    "science": { "kind": "fact", "text": "轨道遥感显示南极水冰分布不均匀，需要地面多点采样确认（月船 1 号 M3 等数据）。" }
+  },
+  {
+    "id": "r5-recycle",
+    "round": 5,
+    "title": "生命支持再循环改造",
+    "location": "core",
+    "desc": "改造水回收与制氧单元，提高闭环率。",
+    "risk": "low",
+    "effects": { "life": 12, "supplies": 8, "energy": -8, "margin": -1 },
+    "sacrifice": "本回合不推进勘测",
+    "science": { "kind": "inference", "text": "从月球冰中提取水和氧是“原位资源利用”的设想，目前仍处于技术验证阶段（推演）。" }
+  },
+  {
+    "id": "r5-charter",
+    "round": 5,
+    "title": "与 Luna 共同制定自治章程",
+    "location": "core",
+    "desc": "全体队员与 Luna 一起写下“谁在什么情况下拥有最终决定权”。",
+    "risk": "low",
+    "effects": { "autonomy": 8, "trust": 6, "team": 6, "margin": -1 },
+    "sacrifice": "本回合不推进勘测",
+    "science": { "kind": "param", "text": "人机权限规则是本作原创设定；自主性与信任的变化为游戏参数。" }
+  },
+  {
+    "id": "r6-sprint",
+    "round": 6,
+    "title": "冲刺完成勘测",
+    "location": "psr",
+    "desc": "最后五天，所有人轮班上阵，补齐勘测缺口。",
+    "risk": "extreme",
+    "effects": { "survey": 26, "team": -8, "energy": -12, "life": -6 },
+    "check": {
+      "p": 0.7,
+      "label": "疲劳作业",
+      "success": { "research": 4 },
+      "fail": { "life": -10, "team": -8 },
+      "successText": "最后一批岩芯入库，任务目标达成。",
+      "failText": "疲劳导致操作失误，舱外服泄压报警。"
+    },
+    "sacrifice": "团队健康与生命支持",
+    "science": { "kind": "param", "text": "冲刺的成功率与损耗为游戏参数。" }
+  },
+  {
+    "id": "r6-archive",
+    "round": 6,
+    "title": "封存样品与数据归档",
+    "location": "relay",
+    "desc": "把全部数据经中继传回地球与空间站，样品封存待下一批乘组。",
+    "risk": "low",
+    "effects": { "research": 16, "supplies": -4, "energy": -4, "survey": 6 },
+    "sacrifice": "勘测缺口不再补齐",
+    "science": { "kind": "fact", "text": "南极部分区域看不到地球，需要中继卫星或高地中继站转发通信。" }
+  },
+  {
+    "id": "r6-settle",
+    "round": 6,
+    "title": "基地长期化部署",
+    "location": "core",
+    "desc": "为下一批乘组加固舱段、补充储能，让基地能独立运行更久。",
+    "risk": "low",
+    "effects": { "life": 8, "equipment": 8, "energy": 6, "team": 4, "survey": 4 },
+    "sacrifice": "科研产出放缓",
+    "science": { "kind": "inference", "text": "长期驻留需要能源、生命支持和防护的冗余（参考阿尔忒弥斯大本营概念的推演）。" }
+  }
+]

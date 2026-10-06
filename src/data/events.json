@@ -1,0 +1,112 @@
+[
+  {
+    "id": "dust",
+    "title": "月尘污染",
+    "location": "ridge",
+    "desc": "勘测车返回时带回大量月尘，光伏板和舱门密封圈表面附着了一层灰色细粉。",
+    "science": { "kind": "fact", "text": "月壤颗粒细小、棱角锋利且易带静电，阿波罗任务中曾磨损宇航服和密封件。" },
+    "weight": 3,
+    "options": [
+      { "id": "clean", "label": "停工全面清洁", "desc": "所有人参与除尘，暂停科研作业。", "effects": { "margin": -1, "equipment": 8, "research": -3 } },
+      { "id": "push", "label": "继续作业", "desc": "先完成计划，清洁以后再说。", "effects": { "equipment": -8 }, "flags": ["dusty"], "delayed": [{ "in": 1, "effects": { "equipment": -5, "energy": -4 }, "text": "月尘持续磨损，设备 −5、光伏效率下降能源 −4" }] },
+      { "id": "bots", "label": "交给 Luna 调度清洁机器人", "desc": "机器人夜间作业，耗电但不占用人手。", "effects": { "energy": -6, "equipment": 5, "autonomy": -2, "trust": 1 } }
+    ]
+  },
+  {
+    "id": "thermal",
+    "title": "极端温差",
+    "location": "psr",
+    "desc": "勘测车从受照坡面进入阴影区，几分钟内外壳温差超过 200 °C，电池加热器满负荷运转。",
+    "science": { "kind": "fact", "text": "月球没有大气缓冲，受照面与阴影面温差极大：赤道白天可超过 120 °C、夜间降至 −130 °C 以下，极区永久阴影处更冷。" },
+    "weight": 3,
+    "options": [
+      { "id": "heat", "label": "提高加热功率", "desc": "保证设备安全，但耗电。", "effects": { "energy": -12 } },
+      { "id": "short", "label": "缩短舱外时间", "desc": "减少暴露，放弃部分采样点。", "effects": { "survey": -5, "team": 2 } },
+      {
+        "id": "risk",
+        "label": "按原计划继续",
+        "desc": "相信设备设计余量。",
+        "effects": {},
+        "check": { "p": 0.6, "label": "设备耐受", "success": { "survey": 6 }, "fail": { "equipment": -12, "team": -6 }, "successText": "设备扛住了温差，额外完成一处采样。", "failText": "电池组低温失效，勘测车被拖回维修。" }
+      }
+    ]
+  },
+  {
+    "id": "storm",
+    "title": "太阳风暴预警",
+    "location": "station",
+    "desc": "空间站转发预警：一次太阳高能粒子事件将在数小时后抵达月面。",
+    "science": { "kind": "fact", "text": "月球没有全球磁场和浓厚大气，太阳高能粒子事件会直接到达月面，需要屏蔽掩体。" },
+    "weight": 2,
+    "options": [
+      { "id": "shelter", "label": "全员进入屏蔽舱", "desc": "暂停一切舱外活动。若地下城已启用，可直接转入地下。", "effects": { "margin": -1, "team": -3 } },
+      {
+        "id": "rush",
+        "label": "抢在风暴前完成采样",
+        "desc": "风暴抵达前还有时间窗口。",
+        "effects": {},
+        "check": { "p": 0.5, "label": "抢时间", "success": { "survey": 10 }, "fail": { "life": -10, "team": -10 }, "successText": "队员在粒子流抵达前 20 分钟回舱。", "failText": "返回延误，队员受到额外辐射剂量，需要医疗观察。" }
+      },
+      { "id": "forecast", "label": "按 Luna 的预报分批避险", "desc": "根据粒子通量预测，轮流短时出舱。", "effects": { "energy": -5, "team": -2, "autonomy": -2, "trust": 2 } }
+    ]
+  },
+  {
+    "id": "contam",
+    "title": "冰样污染",
+    "location": "core",
+    "desc": "质谱仪发现一批冰样中有舱内常见的有机物信号，可能在转运时被污染。",
+    "science": { "kind": "inference", "text": "人类活动带来的水汽和有机物会污染挥发物样品，样品管理规程是科学可信度的基础（推演）。" },
+    "weight": 2,
+    "minRound": 2,
+    "options": [
+      { "id": "redo", "label": "销毁并重新采集", "desc": "严格但代价高。", "effects": { "survey": -8, "supplies": -5, "research": 3 } },
+      { "id": "flag", "label": "隔离标注后继续分析", "desc": "保留数据，但注明可能污染。", "effects": { "research": 4 }, "delayed": [{ "in": 1, "effects": { "research": -9 }, "text": "同行审查质疑污染样品，部分结论撤回，科研 −9" }] },
+      { "id": "audit", "label": "请空间站实验室复核", "desc": "把样本数据上传，由空间站独立复核。", "requires": "station", "effects": { "margin": -1, "research": 6 } }
+    ]
+  },
+  {
+    "id": "comms",
+    "title": "通信中断",
+    "location": "relay",
+    "desc": "通信中继点的天线指向机构卡死，与空间站和地球的联系中断。",
+    "science": { "kind": "fact", "text": "南极许多低洼处看不到地球，需要依靠高地中继或中继卫星通信；地月单程信号延迟约 1.3 秒。" },
+    "weight": 2,
+    "options": [
+      {
+        "id": "repair",
+        "label": "派队员前往中继点抢修",
+        "desc": "需要穿越陡坡到达高地。",
+        "effects": { "energy": -4 },
+        "check": { "p": 0.7, "label": "高地抢修", "success": { "team": 3 }, "fail": { "team": -8, "equipment": -6 }, "successText": "天线恢复，通信窗口重新打开。", "failText": "抢修受阻，一名队员扭伤脚踝，天线勉强恢复低速链路。" }
+      },
+      { "id": "wait", "label": "等待自动重启", "desc": "本回合无法使用空间站支援。", "effects": { "margin": -2 }, "flags": ["commsDown"] },
+      { "id": "luna", "label": "授权 Luna 在断联期间自主运行", "desc": "Luna 接管基地日常调度，直到通信恢复。", "effects": { "autonomy": -5, "trust": 2, "margin": 1 } }
+    ]
+  },
+  {
+    "id": "injury",
+    "title": "队员伤病",
+    "location": "core",
+    "desc": "地质学家在舱外作业时手腕扭伤，同时出现低重力环境下常见的睡眠障碍。",
+    "science": { "kind": "inference", "text": "低重力、辐射和隔离环境对人体的长期影响仍在研究中，医疗资源有限（推演）。" },
+    "weight": 2,
+    "options": [
+      { "id": "rest", "label": "停工治疗", "desc": "优先保障队员健康。", "effects": { "supplies": -6, "team": 4, "margin": -1 } },
+      { "id": "work", "label": "带伤继续作业", "desc": "人手不够，大家一起扛。", "effects": { "team": -10, "survey": 5 } },
+      { "id": "evac", "label": "后送空间站治疗", "desc": "搭乘补给返回舱上行，团队暂时减员。", "requires": "station", "effects": { "supplies": -3, "team": -3, "life": 3 } }
+    ]
+  },
+  {
+    "id": "fault",
+    "title": "设备故障",
+    "location": "core",
+    "desc": "电解制氧单元的一个电堆效率骤降，生命支持系统发出黄色告警。",
+    "science": { "kind": "param", "text": "故障发生概率随设备状态和路线选择变化，为游戏参数。" },
+    "weight": 3,
+    "options": [
+      { "id": "spare", "label": "使用备件修复", "desc": "最稳妥的办法。", "effects": { "supplies": -10, "equipment": 8 } },
+      { "id": "cannibal", "label": "拆用非关键设备零件", "desc": "节省备件，但会牺牲部分科研仪器。", "effects": { "equipment": 4, "research": -4 } },
+      { "id": "degrade", "label": "降级运行", "desc": "先凑合用，减少负载。", "effects": { "life": -4 }, "delayed": [{ "in": 1, "effects": { "equipment": -6, "life": -4 }, "text": "带病运行的电堆进一步老化，设备 −6、生命支持 −4" }] }
+    ]
+  }
+]

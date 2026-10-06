@@ -1,0 +1,27 @@
+{
+  "name": "astra-qunxing",
+  "private": true,
+  "version": "1.0.0",
+  "description": "《Astra:群星计划》—— 月球南极基地策略叙事网页游戏（Three.js）",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:offline": "vite build --mode offline",
+    "package:offline": "npm run build:offline && node scripts/package-offline.mjs",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/three": "^0.186.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^5.0.3"
+  }
+}

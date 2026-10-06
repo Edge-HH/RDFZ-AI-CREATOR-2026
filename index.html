@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="《Astra:群星计划》——月球南极联合基地策略叙事网页游戏。在有限资源下完成冰样勘测，决定人类与 AI 如何共同管理未来基地。" />
+    <meta name="theme-color" content="#05070d" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='22' fill='%23d9d6cf'/%3E%3Ccircle cx='24' cy='26' r='5' fill='%23a9a49a'/%3E%3Ccircle cx='38' cy='40' r='7' fill='%23a9a49a'/%3E%3Cpath d='M50 8l2 6 6 2-6 2-2 6-2-6-6-2 6-2z' fill='%237fd8ff'/%3E%3C/svg%3E" />
+    <title>Astra:群星计划</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand__mark" aria-hidden="true"></span>
+          <div>
+            <h1 class="brand__title">Astra<span>:</span>群星计划</h1>
+            <p class="brand__sub">月球南极联合基地 · 任务指挥</p>
+          </div>
+        </div>
+        <div class="clock" id="clock"></div>
+        <nav class="topbar__actions">
+          <button class="btn btn--ghost" id="btn-science" type="button">科学与规则</button>
+          <button class="btn btn--ghost" id="btn-restart" type="button">重新开始</button>
+        </nav>
+      </header>
+
+      <main class="layout">
+        <section class="stage" aria-label="三维场景">
+          <div class="stage__canvas" id="scene"></div>
+          <div class="stage__labels" id="labels"></div>
+          <div class="stage__views" role="group" aria-label="视图切换">
+            <button type="button" class="chip is-active" data-view="overview">月面全景</button>
+            <button type="button" class="chip" data-view="cutaway">地下剖切</button>
+            <button type="button" class="chip" data-view="orbit">空间站轨道</button>
+          </div>
+          <div class="stage__legend">
+            <span class="tag tag--fact">科学事实</span>
+            <span class="tag tag--inference">合理推演</span>
+            <span class="tag tag--param">游戏参数</span>
+          </div>
+          <aside class="place" id="place" aria-live="polite"></aside>
+        </section>
+
+        <aside class="side" id="side" aria-label="指挥面板"></aside>
+
+        <section class="bottom" aria-label="日志">
+          <div class="tabs" role="tablist">
+            <button type="button" role="tab" class="tab is-active" data-tab="log">事件日志</button>
+            <button type="button" role="tab" class="tab" data-tab="basis">判断依据</button>
+            <button type="button" role="tab" class="tab" data-tab="delayed">延迟后果 <span id="delayed-count" class="tab__count"></span></button>
+          </div>
+          <div class="bottom__body" id="bottom"></div>
+        </section>
+      </main>
+
+      <div class="overlay" id="overlay" hidden></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+    <noscript>本游戏需要启用 JavaScript 和 WebGL。</noscript>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

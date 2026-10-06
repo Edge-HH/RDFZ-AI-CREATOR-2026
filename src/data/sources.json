@@ -1,0 +1,90 @@
+[
+  {
+    "id": "artemis-plan",
+    "title": "NASA's Plan for Sustained Lunar Exploration and Development（阿尔忒弥斯大本营概念）",
+    "org": "NASA",
+    "year": 2020,
+    "url": "https://www.nasa.gov/wp-content/uploads/2020/08/a_sustained_lunar_presence_nspc_report4220final.pdf",
+    "usedFor": "基地核心舱、地表居住舱与长期驻留设想的参照（合理推演）"
+  },
+  {
+    "id": "nasa-south-pole",
+    "title": "South Pole – NASA Science（月球南极专题）",
+    "org": "NASA Science",
+    "year": 2024,
+    "url": "https://science.nasa.gov/moon/south-pole/",
+    "usedFor": "南极低太阳高度角、长时间光照高地与永久阴影区的空间关系"
+  },
+  {
+    "id": "diviner-cold-traps",
+    "title": "Diviner Lunar Radiometer Observations of Cold Traps in the Moon's South Polar Region",
+    "org": "Paige D.A. 等，Science 330:479–482",
+    "year": 2010,
+    "url": "https://doi.org/10.1126/science.1187726",
+    "usedFor": "永久阴影区极低温（数十开尔文量级）与冷阱"
+  },
+  {
+    "id": "diviner-global",
+    "title": "The global surface temperatures of the Moon as measured by the Diviner Lunar Radiometer Experiment",
+    "org": "Williams J.-P. 等，Icarus 283:300–325",
+    "year": 2017,
+    "url": "https://doi.org/10.1016/j.icarus.2016.08.012",
+    "usedFor": "月面昼夜温差、极端温度事件"
+  },
+  {
+    "id": "lcross",
+    "title": "Detection of Water in the LCROSS Ejecta Plume",
+    "org": "Colaprete A. 等，Science 330:463–468",
+    "year": 2010,
+    "url": "https://doi.org/10.1126/science.1186986",
+    "usedFor": "南极永久阴影区存在水冰的直接证据"
+  },
+  {
+    "id": "m3-ice",
+    "title": "Direct evidence of surface exposed water ice in the lunar polar regions",
+    "org": "Li S. 等，PNAS 115(36):8907–8912",
+    "year": 2018,
+    "url": "https://doi.org/10.1073/pnas.1802345115",
+    "usedFor": "水冰在极区分布不均匀、需要多点采样"
+  },
+  {
+    "id": "lola-illumination",
+    "title": "Illumination conditions of the lunar polar regions using LOLA topography",
+    "org": "Mazarico E. 等，Icarus 211:1066–1081",
+    "year": 2011,
+    "url": "https://doi.org/10.1016/j.icarus.2010.10.030",
+    "usedFor": "极区高地的长时间光照、光照窗口的计算方法（地形遮挡）"
+  },
+  {
+    "id": "shackleton",
+    "title": "Constraints on the volatile distribution within Shackleton crater at the lunar south pole",
+    "org": "Zuber M.T. 等，Nature 486:378–381",
+    "year": 2012,
+    "url": "https://doi.org/10.1038/nature11216",
+    "usedFor": "南极环形山地形（深坑、陡壁）的参照"
+  },
+  {
+    "id": "apollo-dust",
+    "title": "The Effects of Lunar Dust on EVA Systems During the Apollo Missions（NASA/TM-2005-213610）",
+    "org": "Gaier J.R.，NASA Glenn",
+    "year": 2005,
+    "url": "https://ntrs.nasa.gov/citations/20050160460",
+    "usedFor": "月尘磨损、附着与密封问题"
+  },
+  {
+    "id": "lro",
+    "title": "Lunar Reconnaissance Orbiter（LRO）任务页面",
+    "org": "NASA Science",
+    "year": 2024,
+    "url": "https://science.nasa.gov/mission/lro/",
+    "usedFor": "轨道测绘数据（地形、温度、光照）的来源说明"
+  },
+  {
+    "id": "gateway",
+    "title": "Gateway（月球门户空间站）",
+    "org": "NASA",
+    "year": 2024,
+    "url": "https://www.nasa.gov/mission/gateway/",
+    "usedFor": "领航员空间站的原型参照（本作为合理推演，项目进展以官方信息为准）"
+  }
+]
