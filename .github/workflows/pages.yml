@@ -30,9 +30,12 @@ jobs:
           name: static-build
           path: dist
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: browser-evidence
-          path: releases/screenshots
+          path: |
+            releases/screenshots
+            test-results
   deploy:
     if: github.ref == 'refs/heads/main'
     needs: validate

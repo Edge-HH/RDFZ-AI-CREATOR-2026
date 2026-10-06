@@ -320,7 +320,9 @@ function render(): void {
 // Execution time pauses while hidden or suspended. No stale timeout survives restart.
 setInterval(() => {
   const now = performance.now();
-  const delta = Math.min(100, now - lastTime);
+  // Rendering latency must not slow mission time. Visibility and pause gates
+  // freeze progression explicitly; active execution uses elapsed wall time.
+  const delta = Math.max(0, now - lastTime);
   lastTime = now;
   if (state.phase !== "execution" || state.paused || modal || document.hidden)
     return;
