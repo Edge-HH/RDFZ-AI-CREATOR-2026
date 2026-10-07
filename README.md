@@ -1,6 +1,6 @@
 # 灰环点火
 
-公网版本：https://edge-hh.github.io/RDFZ-AI-CREATOR-2026/ （发布完成后可访问）
+公网版本：[启动灰环点火](https://edge-hh.github.io/RDFZ-AI-CREATOR-2026/)
 
 原创科幻策略叙事网页。玩家作为现场系统工程师林岑，与五人小队运送脉冲点火芯、穿越白弧盆地并抢修环弧—7 行星推力塔。
 
@@ -28,7 +28,7 @@ npm run preview
 npm run package:offline
 ```
 
-输出 `releases/gray-ring-ignition-offline.zip`。解压后，在 Windows 双击 `start-local.bat`，它用已安装的 Node.js 或 Python 3 启动本地服务器。也可以在包目录手动运行 `node serve.mjs`，访问 `http://127.0.0.1:4173/`。服务器仅绑定本机，断网仍能完成一局。没有 Node/Python 的评审机需要先安装其中一个；不默认保证直接双击 `index.html` 的 ES 模块环境可运行。
+输出 `releases/gray-ring-ignition-offline.zip`，每次打包重新生成同名目录，避免旧构建混入。解压后，在 Windows 双击 `start-local.bat`，它用已安装的 Node.js 或 Python 3 启动本地服务器。也可以在包目录手动运行 `node serve.mjs`，访问 `http://127.0.0.1:4173/`。服务器仅绑定本机，断网仍能完成一局。没有 Node/Python 的评审机需要先安装其中一个；不默认保证直接双击 `index.html` 的 ES 模块环境可运行。
 
 ## 怎么玩
 
@@ -69,4 +69,4 @@ npm run build
 
 `.github/workflows/pages.yml` 提供 GitHub Pages 构建部署，构建产物可用于任意静态服务器。当前仓库 Pages 环境只允许 main 分支发布，功能分支不会自动替换线上站点。
 
-性能目标：桌面约 60 FPS、移动端约 30 FPS。帧率受设备/浏览器/WebGL 驱动影响；小屏限制 DPR 为 1.5，远景使用低细节表示，隐藏/暂停停止渲染。目标不是对所有设备的保证。
+性能目标：桌面约 60 FPS、移动端约 30 FPS。帧率受设备/浏览器/WebGL 驱动影响；小屏限制 DPR 为 1.5，持续低帧率时降低 DPR 并使用低模，隐藏/暂停停止渲染。执行计时独立于渲染帧率。目标不是对所有设备的保证。

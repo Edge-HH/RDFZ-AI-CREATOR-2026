@@ -1,7 +1,9 @@
-import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 const folder = path.resolve("releases/gray-ring-ignition-offline");
+// Rebuild only this generated directory so old hashed bundles never enter the ZIP.
+await rm(folder, { recursive: true, force: true });
 await mkdir(folder, { recursive: true });
 await cp("dist", path.join(folder, "dist"), { recursive: true });
 for (const [name, source] of [
