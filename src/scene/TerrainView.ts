@@ -73,6 +73,9 @@ export class TerrainView {
   private controls!: OrbitControls;
   private assetLoader = new AssetLoader();
   private roverLod?: THREE.LOD;
+  private engineLod?: THREE.LOD;
+  private lowQuality = false;
+  private slowWindows = 0;
   private drone?: THREE.Object3D;
   private relayRing?: THREE.Mesh;
   private activity = "";
@@ -270,6 +273,8 @@ export class TerrainView {
   start(): void {
     if (this.running || this.disposed) return;
     this.running = true;
+    this.frameStart = performance.now();
+    this.frameCount = 0;
     const animate = (time: number) => {
       if (!this.running || this.disposed) return;
       this.raf = window.requestAnimationFrame(animate);
@@ -277,7 +282,10 @@ export class TerrainView {
       if (time - this.lastFrame < frameTime - 0.75) return;
       this.lastFrame = time;
       this.controls.update();
-      this.roverLod?.update(this.camera);
+      if (!this.lowQuality) {
+        this.roverLod?.update(this.camera);
+        this.engineLod?.update(this.camera);
+      }
       if (this.drone) {
         this.drone.visible = /drone|scan|remote/.test(this.activity);
         if (!this.reducedMotion) this.drone.rotation.y = time * 0.001;
@@ -302,6 +310,13 @@ export class TerrainView {
         );
         this.frameCount = 0;
         this.frameStart = time;
+        if (
+          Number(this.canvas.dataset.fps) < 18 &&
+          this.canvas.dataset.models === "3"
+        )
+          this.slowWindows++;
+        else this.slowWindows = 0;
+        if (this.slowWindows >= 2) this.useLowQuality();
       }
     };
     this.raf = window.requestAnimationFrame(animate);
@@ -363,7 +378,47 @@ export class TerrainView {
       .add(new THREE.Vector3(0, 35, 30));
     this.controls.update();
   }
+  private useLowQuality(): void {
+    if (this.lowQuality) return;
+    this.lowQuality = true;
+    this.renderer.setPixelRatio(1);
+    for (const lod of [this.roverLod, this.engineLod]) {
+      if (!lod) continue;
+      lod.autoUpdate = false;
+      lod.levels.forEach((level, index) => {
+        level.object.visible = index === lod.levels.length - 1;
+      });
+    }
+    this.canvas.dataset.quality = "adaptive-low";
+    this.resize();
+  }
   private normalizeModel(model: THREE.Object3D, size: number): THREE.Object3D {
+    // Mission-scale telemetry does not need transmission/clearcoat passes.
+    // Keep authored textures and metallic shading, reduce expensive physical layers.
+    model.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const simplify = (material: THREE.Material) => {
+        if (!(material instanceof THREE.MeshPhysicalMaterial)) return material;
+        const next = new THREE.MeshStandardMaterial({
+          color: material.color,
+          map: material.map,
+          normalMap: material.normalMap,
+          roughnessMap: material.roughnessMap,
+          metalnessMap: material.metalnessMap,
+          roughness: material.roughness,
+          metalness: material.metalness,
+          emissive: material.emissive,
+          emissiveMap: material.emissiveMap,
+          side: material.side,
+        });
+        material.dispose();
+        return next;
+      };
+      mesh.material = Array.isArray(mesh.material)
+        ? mesh.material.map(simplify)
+        : simplify(mesh.material);
+    });
     const box = new THREE.Box3().setFromObject(model);
     const dimensions = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
@@ -406,6 +461,7 @@ export class TerrainView {
       lod.addLevel(this.normalizeModel(engine, 15), 0);
       lod.addLevel(createPlaceholderModel("engine"), 100);
       this.engine.add(lod);
+      this.engineLod = lod;
     }
     if (drone) {
       this.drone = this.normalizeModel(drone, 3);

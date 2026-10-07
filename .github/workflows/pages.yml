@@ -25,6 +25,7 @@ jobs:
       - run: npm run test:e2e
         env:
           CI: true
+          TEST_DIST: '1'
       - uses: actions/upload-artifact@v4
         with:
           name: static-build
