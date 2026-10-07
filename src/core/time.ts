@@ -21,12 +21,17 @@ function stepDay(s: MissionState): void {
   const crewFactor = active.length / 4;
   const ease = s.mode === 'story' ? 0.5 : 1;
   const r = rates(s);
+  // 配给制：食物与水按七到八成供应，士气持续受损
+  const ration = s.flags.includes('rationing');
+  const foodUse = FOOD_USE * (ration ? 0.7 : 1);
+  const waterUse = WATER_USE * (ration ? 0.8 : 1);
+  if (ration) for (const c of active) c.morale = clamp(c.morale - 0.05);
 
   if (phase === 'cruise' || phase === 'return') {
     if (phase === 'cruise') {
       s.o2 = Math.max(0, s.o2 - O2_USE * crewFactor * ease);
-      s.water = Math.max(0, s.water - WATER_USE * crewFactor * ease);
-      s.food = Math.max(0, s.food - FOOD_USE * crewFactor * ease);
+      s.water = Math.max(0, s.water - waterUse * crewFactor * ease);
+      s.food = Math.max(0, s.food - foodUse * crewFactor * ease);
     }
     for (const c of active) {
       c.dose += CRUISE_DOSE * r.cruiseShield;
@@ -49,14 +54,17 @@ function stepDay(s: MissionState): void {
     }
 
     s.o2 = Math.max(0, s.o2 + r.o2Gen * powerRatio - O2_USE * crewFactor * ease);
-    s.water = Math.max(0, s.water + r.waterGen * powerRatio - WATER_USE * crewFactor * ease);
-    s.food = Math.max(0, s.food + r.foodGen * powerRatio - FOOD_USE * crewFactor * ease);
+    s.water = Math.max(0, s.water + r.waterGen * powerRatio - waterUse * crewFactor * ease);
+    s.food = Math.max(0, s.food + r.foodGen * powerRatio - foodUse * crewFactor * ease);
 
-    // 萨巴蒂尔推进剂工厂：自带氢源保底生产，本地水冰充足时翻倍
+    // 富余电力驱动更多实验与电解（最多 +30%）
+    const surplus = 1 + Math.min(0.3, Math.max(0, r.powerGen - r.powerNeed) / 20);
+
+    // 萨巴蒂尔推进剂工厂：自带氢源保底生产，本地水冰充足时更快
     const hydro = s.water > 40 ? Math.min(1, r.waterGen / 0.6) : 0;
-    s.propellant = clamp(s.propellant + (0.06 + 0.07 * hydro) * powerRatio, 0, 120);
+    s.propellant = clamp(s.propellant + (0.08 + 0.06 * hydro) * powerRatio * surplus, 0, 120);
 
-    s.science += 0.15 * r.scienceMult * powerRatio * (active.length / 4);
+    s.science += 0.15 * r.scienceMult * powerRatio * surplus * (active.length / 4);
 
     if (powerRatio < 0.6) {
       s.integrity = clamp(s.integrity - 0.15 * ease);
@@ -79,11 +87,25 @@ function stepDay(s: MissionState): void {
   }
 }
 
+// 地表断粮危及生命、且推进剂足以起飞时，乘组按应急程序撤离
+const EVAC_HEALTH = 35;
+const EVAC_PROPELLANT = 70;
+
+function mustEvacuate(s: MissionState): boolean {
+  if (phaseOf(s.day) !== 'surface' || s.propellant < EVAC_PROPELLANT) return false;
+  if (Math.min(s.o2, s.water, s.food) > 0) return false;
+  return s.crew.some((c) => (c.status === 'ok' || c.status === 'injured') && c.health < EVAC_HEALTH);
+}
+
 export function passTime(state: MissionState, days: number): MissionState {
   const s = structuredClone(state);
   for (let i = 0; i < days; i++) {
     stepDay(s);
     s.day += 1;
+    if (mustEvacuate(s)) {
+      s.flags.push('aborted', 'emergency_evac');
+      break;
+    }
   }
   return s;
 }

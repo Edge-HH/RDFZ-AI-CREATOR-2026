@@ -140,6 +140,7 @@ export class Game {
             s = applyEffect(s, dyn(o.risk.fail, s) ?? {});
             lines = [...lines, ...evalLines(o.risk.failLines, s)];
           } else {
+            s = applyEffect(s, dyn(o.risk.ok, s) ?? {});
             lines = [...lines, ...evalLines(o.risk.okLines, s)];
           }
         }

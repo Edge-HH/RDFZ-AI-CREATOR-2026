@@ -4,8 +4,8 @@ import type { MissionState } from './types';
 export type EndingId = 'triumph' | 'safe' | 'stayed' | 'cost' | 'abort' | 'silent' | 'letgo';
 
 // 科研阈值（由 scripts/simulate.ts 校准）
-export const SCI_HIGH = 160;
-export const SCI_GOOD = 110;
+export const SCI_HIGH = 200;
+export const SCI_GOOD = 140;
 export const DOSE_LIMIT = 1000; // mSv，参照 ESA 职业上限 1 Sv
 
 const lost = (s: MissionState) => s.crew.filter((c) => c.status === 'lost').length;
@@ -24,7 +24,7 @@ export function determineEnding(s: MissionState): EndingId {
   if (s.flags.includes('aborted')) return 'abort';
   if (lost(s) > 0) return 'cost';
   if (stayed(s) > 0) return 'stayed';
-  if (s.flags.includes('qin_resolved') && avgTrust(s) >= 70 && avgAutonomy(s) >= 2 && s.science >= SCI_GOOD) return 'letgo';
+  if (s.flags.includes('qin_resolved') && avgTrust(s) >= 75 && avgAutonomy(s) >= 2 && s.science >= SCI_GOOD) return 'letgo';
   if (s.science >= SCI_HIGH) return 'triumph';
   return 'safe';
 }
@@ -33,12 +33,11 @@ export function determineEnding(s: MissionState): EndingId {
 export function terminalEnding(s: MissionState): EndingId | null {
   if (lost(s) === s.crew.length) return 'silent';
   if (s.flags.includes('aborted') || s.flags.includes('silent')) return determineEnding(s);
-  const onSurface = phaseOf(s.day) === 'surface';
-  const crisis = s.integrity <= 0 || (onSurface && Math.min(s.o2, s.water, s.food) <= 0);
-  if (crisis) {
+  // 物资耗尽不立即终止，而是持续伤害健康（见 time.ts）；舱体完好度归零才是灾难
+  if (s.integrity <= 0) {
     // 推进剂足以紧急上升则撤离，否则寂静
-    if (onSurface && s.propellant >= 70) return 'abort';
-    if (s.integrity <= 0) return 'silent';
+    if (phaseOf(s.day) === 'surface' && s.propellant >= 70) return 'abort';
+    return 'silent';
   }
   return null;
 }

@@ -37,6 +37,22 @@ describe('结局判定（按优先级）', () => {
   });
 });
 
+describe('即时终止', () => {
+  test('地表断粮不会立即终止任务（由健康损失体现）', async () => {
+    const { terminalEnding } = await import('../src/core/endings');
+    const { ARRIVAL_DAY } = await import('../src/core/orbit');
+    const s = { ...createState(1), day: ARRIVAL_DAY + 10, food: 0, propellant: 90 };
+    expect(terminalEnding(s)).toBeNull();
+  });
+  test('地表舱体完好度归零：推进剂足够则撤离，否则寂静', async () => {
+    const { terminalEnding } = await import('../src/core/endings');
+    const { ARRIVAL_DAY } = await import('../src/core/orbit');
+    const s = { ...createState(1), day: ARRIVAL_DAY + 10, integrity: 0 };
+    expect(terminalEnding({ ...s, propellant: 90 })).toBe('abort');
+    expect(terminalEnding({ ...s, propellant: 40 })).toBe('silent');
+  });
+});
+
 describe('评级', () => {
   test('寂静红土只能是 D', () => {
     const s = applyEffect(base(), { crew: { all: { health: -200 } } });

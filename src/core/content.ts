@@ -18,6 +18,7 @@ export type Dyn<T> = T | ((s: MissionState) => T);
 export interface OptionRisk extends Risk {
   label: string; // 风险描述，例如“剂量超标”
   fail: Dyn<Effect>;
+  ok?: Dyn<Effect>;
   failLines?: Lines;
   okLines?: Lines;
 }

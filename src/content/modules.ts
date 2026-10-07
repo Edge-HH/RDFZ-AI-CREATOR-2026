@@ -29,8 +29,8 @@ export interface ModuleDef {
 export const SLOT_BUDGET = 12;
 
 export const MODULES: ModuleDef[] = [
-  { id: 'fission', name: '裂变电源', slots: 2, group: '能源', powerKW: 10,
-    desc: '10 kWe 小型核裂变堆，昼夜与沙尘暴下都稳定供电。',
+  { id: 'fission', name: '裂变电源（2×7 kWe）', slots: 2, group: '能源', powerKW: 14,
+    desc: '两台 7 kWe 小型核裂变堆，昼夜与沙尘暴下都稳定供电。',
     basis: 'NASA Kilopower/KRUSTY 2018 年地面试验验证了 1–10 kWe 级裂变电源。', archive: 'kilopower' },
   { id: 'solar', name: '大型太阳能阵列', slots: 2, group: '能源', solarKW: 16,
     desc: '名义 16 kW，但受纬度和沙尘影响，全球沙尘暴时几乎归零。',
@@ -41,8 +41,8 @@ export const MODULES: ModuleDef[] = [
   { id: 'battery', name: '储能电池组', slots: 1, group: '能源', storageKWh: 400,
     desc: '增加 400 kWh 储能，用来熬过短期沙尘与夜间。',
     basis: '机遇号在 2018 年全球沙尘暴中因电量耗尽而失联。', archive: 'dust2018' },
-  { id: 'moxie', name: 'MOXIE-X 制氧机', slots: 1, group: '生保', o2Gen: 0.7, drawKW: 3,
-    desc: '电解大气 CO₂ 制氧，满功率时覆盖 70% 用氧。',
+  { id: 'moxie', name: 'MOXIE-X 制氧机', slots: 1, group: '生保', o2Gen: 0.45, drawKW: 3,
+    desc: '电解大气 CO₂ 制氧，满功率时覆盖约九成用氧。',
     basis: '毅力号搭载的 MOXIE 在 2021–2023 年共制氧 122 g，峰值 12 g/h。', archive: 'moxie' },
   { id: 'ice_drill', name: '冰层钻探提水', slots: 2, group: '生保', waterGen: 1.2, drawKW: 4,
     desc: '开采地下水冰，产量取决于着陆点冰储量。水也是推进剂工厂的氢源。',

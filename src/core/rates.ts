@@ -49,7 +49,7 @@ export function rates(s: MissionState): Rates {
     r.safety += m.safety ?? 0;
     r.moralePer30 += m.morale ?? 0;
   }
-  if (s.flags.includes('load_shed')) r.powerNeed = Math.max(HABITAT_KW, r.powerNeed - 3);
+  if (s.flags.includes('load_shed')) r.powerNeed = Math.max(HABITAT_KW - 1, r.powerNeed - 6);
   r.scienceMult *= site?.science ?? 1;
   if (s.flags.includes('load_shed')) r.scienceMult *= 0.5;
   return r;

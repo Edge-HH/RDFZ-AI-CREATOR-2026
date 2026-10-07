@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { createState, applyLoadout, loadoutSlots } from '../src/core/state';
 import { applyEffect } from '../src/core/effects';
 import { rates } from '../src/core/rates';
+import { moduleById } from '../src/content/modules';
 import { passTime } from '../src/core/time';
 import { riskWindow, rollRisk } from '../src/core/risk';
 import { ARRIVAL_DAY } from '../src/core/orbit';
@@ -69,8 +70,9 @@ describe('产出速率', () => {
     const clear = applyLoadout(onSurface(createState(1)), ['fission', 'solar']);
     const storm = { ...clear, dustTau: 10 };
     const r0 = rates(clear), r1 = rates(storm);
-    expect(r1.powerGen).toBeGreaterThanOrEqual(10);
-    const solarClear = r0.powerGen - 10, solarStorm = r1.powerGen - 10;
+    const fission = moduleById('fission')!.powerKW!;
+    expect(r1.powerGen).toBeGreaterThanOrEqual(fission);
+    const solarClear = r0.powerGen - fission, solarStorm = r1.powerGen - fission;
     expect(solarStorm).toBeLessThan(solarClear * 0.1);
   });
   test('高纬度着陆点太阳能更弱', () => {
@@ -107,10 +109,43 @@ describe('时间推进', () => {
     expect(a.o2).toBeGreaterThan(noMoxie.o2);
     expect(a.propellant).toBeGreaterThan(s.propellant);
   });
+  test('电力富余时科研与推进剂产出更高', () => {
+    const loads = ['moxie', 'ice_drill', 'greenhouse'];
+    const tight = applyLoadout(onSurface(createState(1)), ['fission', ...loads]);
+    const rich = applyLoadout(onSurface(createState(1)), ['fission', 'solar', 'solar_ext', ...loads]);
+    const a = passTime(tight, 30), b = passTime(rich, 30);
+    expect(b.science).toBeGreaterThan(a.science * 1.1);
+    expect(b.propellant - rich.propellant).toBeGreaterThan((a.propellant - tight.propellant) * 1.1);
+  });
+  test('不带冰钻时推进剂工厂一年半也能产出约 36%', () => {
+    const s = applyLoadout(onSurface(createState(1)), ['fission', 'solar']);
+    const a = passTime(s, 454);
+    expect(a.propellant - s.propellant).toBeGreaterThan(33);
+  });
   test('物资耗尽后乘员健康下降', () => {
     const s = { ...onSurface(createState(1)), food: 0 };
     const a = passTime(s, 10);
     expect(a.crew[0].health).toBeLessThan(100);
+  });
+  test('配给制：食物与水消耗降低，士气额外下降', () => {
+    const s = { ...onSurface(createState(1)) };
+    const normal = passTime(s, 30);
+    const ration = passTime({ ...s, flags: ['rationing'] }, 30);
+    expect(ration.food).toBeGreaterThan(normal.food);
+    expect(ration.water).toBeGreaterThan(normal.water);
+    expect(ration.crew[0].morale).toBeLessThan(normal.crew[0].morale);
+  });
+  test('地表断粮危及生命且推进剂足够时，乘组紧急撤离并停止推进时间', () => {
+    const s = { ...onSurface(createState(1)), food: 0, propellant: 90 };
+    const a = passTime(s, 200);
+    expect(a.flags).toContain('aborted');
+    expect(a.flags).toContain('emergency_evac');
+    expect(a.day).toBeLessThan(s.day + 200);
+    expect(a.crew.every((c) => c.status !== 'lost')).toBe(true);
+  });
+  test('推进剂不足时无法紧急撤离', () => {
+    const s = { ...onSurface(createState(1)), food: 0, propellant: 40 };
+    expect(passTime(s, 60).flags).not.toContain('aborted');
   });
   test('叙事模式消耗减半', () => {
     const std = passTime({ ...createState(1), day: 0 }, 100);

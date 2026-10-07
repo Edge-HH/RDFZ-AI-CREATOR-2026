@@ -17,6 +17,7 @@ const chapters: Chapter[] = [
             { id: 'locked', label: '锁定', requires: () => false, lockedReason: '不可用' },
             { id: 'gamble', label: '冒险', risk: { base: 0.95, label: '失败', fail: { integrity: -50 }, failLines: [{ speaker: 'sys', text: '失败了' }] } },
             { id: 'quit', label: '中止', effect: { flags: ['aborted'] } },
+            { id: 'sure', label: '必成', risk: { base: 0.01, label: '失败', fail: {}, ok: { science: 9 } } },
           ],
         },
         days: 10,
@@ -84,6 +85,14 @@ describe('流程引擎', () => {
     expect(res.riskFailed).toBe(true);
     expect(g.state.integrity).toBe(50);
     expect(res.lines.map((l) => l.text)).toContain('失败了');
+  });
+
+  test('风险成功时应用成功效果', () => {
+    const g = new Game(chapters, 1);
+    g.next();
+    const res = g.choose({ kind: 'choice', optionId: 'sure' });
+    expect(res.riskFailed).toBe(false);
+    expect(g.state.science).toBe(9);
   });
 
   test('中止标记立即进入结局', () => {
