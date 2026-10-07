@@ -56,7 +56,7 @@ export const ch5: Chapter = {
           { id: 'stay', label: '一人留守火星，等待下一个窗口', detail: '减重补足缺口；留守者将在火星独自等待 26 个月',
             requires: (s) => gap(s) <= 30 && activeCrew(s).length >= 2, lockedReason: '缺口太大或人数不足',
             effect: (s) => ({ propellant: gap(s), crew: { [volunteer(s)!]: { status: 'stayed', trust: 10 } } as Effect['crew'] }),
-            lines: (s) => [L(volunteer(s) ?? 'lin', '我留下。下一批人来的时候，总得有人去接他们。', { voice: 'ch5_01' }), L('lin', '……我们会回来接你的。')] },
+            lines: (s) => [L(volunteer(s) ?? 'lin', '我留下。下一批人来的时候，总得有人去接他们。'), L('lin', '……我们会回来接你的。')] },
           { id: 'risk', label: '以低余量冒险起飞', detail: '上升段失败的风险大幅上升',
             effect: { flags: ['low_fuel_ascent'] }, lines: [L('lin', '……收到。我们赌一把。')] },
         ],

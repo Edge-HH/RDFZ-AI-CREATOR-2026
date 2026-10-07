@@ -36,7 +36,7 @@ export const ch0: Chapter = {
           state: s,
           lines: [
             L('sys', `回执到达。「烽燧」状态：正常。往返耗时 ${fmtMin(d * 2)}。`),
-            L('qin', `你刚才看到的“正常”，是它 ${Math.round(d)} 分钟前的样子。`, { voice: 'ch0_03' }),
+            L('qin', `你刚才看到的“正常”，是它 ${Math.round(d)} 分钟前的样子。`),
             L('qin', '在那之后发生了什么，你不知道。谁也不知道。'),
           ],
         };

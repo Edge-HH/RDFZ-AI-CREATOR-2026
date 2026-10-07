@@ -54,3 +54,16 @@ describe('完整内容自动通关', () => {
     expect(PRESETS.length).toBeGreaterThanOrEqual(12);
   });
 });
+
+describe('知识档案', () => {
+  test('每张档案卡在内容中都有解锁途径', async () => {
+    const { readFileSync, readdirSync } = await import('node:fs');
+    const src = ['src/content/modules.ts', ...readdirSync('src/content/chapters').map((f) => `src/content/chapters/${f}`)]
+      .map((p) => readFileSync(p, 'utf8')).join('\n');
+    const unreachable = ARCHIVE.map((a) => a.id).filter((id) => !id.startsWith('site_') && !src.includes(`'${id}'`));
+    expect(unreachable).toEqual([]);
+  });
+  test('档案链接都是 https 地址', () => {
+    for (const a of ARCHIVE) for (const l of a.links ?? []) expect(l.url).toMatch(/^https:\/\//);
+  });
+});
