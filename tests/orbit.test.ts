@@ -64,3 +64,21 @@ describe('任务阶段', () => {
     expect(phaseOf(DEPARTURE_DAY + 1)).toBe('return');
   });
 });
+
+describe('日凌窗口', () => {
+  test('窗口约两周，且全部落在驻留期内', async () => {
+    const { CONJUNCTION_START, CONJUNCTION_END, ARRIVAL_DAY, DEPARTURE_DAY, isSolarConjunction } = await import('../src/core/orbit');
+    expect(CONJUNCTION_END - CONJUNCTION_START).toBeGreaterThanOrEqual(10);
+    expect(CONJUNCTION_END - CONJUNCTION_START).toBeLessThanOrEqual(20);
+    expect(CONJUNCTION_START).toBeGreaterThan(ARRIVAL_DAY);
+    expect(CONJUNCTION_END).toBeLessThan(DEPARTURE_DAY);
+    expect(isSolarConjunction(CONJUNCTION_START)).toBe(true);
+    expect(isSolarConjunction(CONJUNCTION_START - 1)).toBe(false);
+    expect(isSolarConjunction(CONJUNCTION_END)).toBe(false);
+  });
+  test('地火距离延迟：发射前约 11–12 分钟', async () => {
+    const { earthMarsDelayMinutes } = await import('../src/core/orbit');
+    expect(earthMarsDelayMinutes(-40)).toBeGreaterThan(10);
+    expect(earthMarsDelayMinutes(-40)).toBeLessThan(13);
+  });
+});

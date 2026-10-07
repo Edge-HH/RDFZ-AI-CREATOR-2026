@@ -109,3 +109,21 @@ export function isSolarConjunction(day: number): boolean {
 
 export const SOL_IN_DAYS = 1.02749;
 export const solOf = (day: number) => Math.max(0, Math.floor((day - ARRIVAL_DAY) / SOL_IN_DAYS));
+
+function findConjunction(): { start: number; end: number } {
+  let start = -1;
+  for (let day = ARRIVAL_DAY; day < DEPARTURE_DAY; day++) {
+    const c = isSolarConjunction(day);
+    if (c && start < 0) start = day;
+    if (!c && start >= 0) return { start, end: day };
+  }
+  return { start: DEPARTURE_DAY, end: DEPARTURE_DAY };
+}
+
+const CONJ = findConjunction();
+export const CONJUNCTION_START = CONJ.start;
+export const CONJUNCTION_END = CONJ.end; // 首个恢复通信的日子
+
+export function earthMarsDelayMinutes(day: number): number {
+  return dist(earthPos(day), marsPos(day)) * LIGHT_MIN_PER_AU;
+}
