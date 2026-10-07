@@ -1,8 +1,0 @@
-node_modules/
-dist/
-releases/
-*.tsbuildinfo
-.vite/
-coverage/
-playwright-report/
-test-results/
