@@ -6,6 +6,8 @@ import type {
   CrewId,
   Decision,
   DecisionCheck,
+  DialogueLine,
+  DialogueNode,
   Effect,
   EndingResult,
   GameState,
@@ -61,6 +63,7 @@ export function createInitialState(seed = 17062026): GameState {
   return {
     phase: "briefing",
     sceneId: "prologue",
+    dialogueCursor: 0,
     seed: seed >>> 0,
     resources: { ...INITIAL_RESOURCES },
     crew: Object.fromEntries(
@@ -100,9 +103,25 @@ export function requirementPassed(state: GameState, rule: string): boolean {
           ? actual < target
           : actual === target;
 }
+/** One shared transcript drives rendering, progress guards and save recovery. */
+export function dialogueLines(
+  state: GameState,
+  node: DialogueNode | undefined = getNode(state.sceneId),
+): DialogueLine[] {
+  if (!node) return [];
+  return [
+    { speaker: node.speaker, text: node.text },
+    ...(node.lines ?? []).filter((line) =>
+      (line.requires ?? []).every((rule) => requirementPassed(state, rule)),
+    ),
+  ];
+}
+export function dialogueComplete(state: GameState): boolean {
+  return state.dialogueCursor >= dialogueLines(state).length - 1;
+}
 function describeRequirement(rule: string): string {
-  if (rule === "route:south") return "先在态势窗选择南坡冰脊";
-  if (rule === "route:west") return "先在态势窗选择西侧地热沟";
+  if (rule === "route:south") return "请选择南坡冰脊路线";
+  if (rule === "route:west") return "请选择西侧地热沟路线";
   const flags: Record<string, string> = {
     loadAnchors: "需要装载医疗包与锚索",
     relayActive: "需要启用备用中继",
@@ -182,6 +201,7 @@ export function decisionCheck(
   decision: Decision,
 ): DecisionCheck {
   const missing: string[] = [];
+  if (!dialogueComplete(state)) missing.push("先听完本段通信，再回应队员");
   if (state.paused) missing.push("任务已暂停");
   if (!["conversation", "tactical"].includes(state.phase))
     missing.push("当前阶段不能提交方案");
@@ -316,7 +336,10 @@ export function resolveEvent(
   const roll = stream(state.seed, `${state.sceneId}:${decision.id}`)();
   const effects: Effect[] = [];
   const eventDefinition = events.find((event) => event.id === decision.eventId);
-  let message = eventDefinition?.message ?? "读数落在预估范围内。";
+  let message =
+    decision.feedback?.text ??
+    eventDefinition?.message ??
+    "读数落在预估范围内。";
   if (
     ["ice-event", "steam-event", "mount", "ignition"].includes(state.sceneId) &&
     roll < risk
@@ -339,7 +362,7 @@ export function resolveEvent(
         amount: 8,
         reason: "随车医疗包减轻了伤势，健康恢复 8。",
       });
-    message = dangerous
+    message += dangerous
       ? "冲击超过保护阈值。人已经带出来了，锁扣和一段时间留在原地。"
       : "有一段读数越界。保障方案吸收了大部分冲击，我们仍然能继续。";
   }
@@ -350,7 +373,12 @@ export function resolveEvent(
       state.flags.fired || state.flags.firedPartial || state.flags.overdrive
         ? "推力曲线已回传；请签署最终维修记录。"
         : "本次点火被取消，点火芯随车撤回。";
-  return { effects, speaker: dangerous ? "阿阮" : "沈葵", message, risk };
+  return {
+    effects,
+    speaker: effects.length ? "阿阮" : (decision.feedback?.speaker ?? "沈葵"),
+    message,
+    risk,
+  };
 }
 export function decisionPreview(
   state: GameState,

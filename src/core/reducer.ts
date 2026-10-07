@@ -5,6 +5,7 @@ import {
   applyEffects,
   createInitialState,
   decisionCheck,
+  dialogueComplete,
   evaluateEnding,
   resolveEvent,
   terminalFailure,
@@ -21,10 +22,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     return { ...state, paused: action.paused ?? !state.paused };
   if (state.paused || state.phase === "ending") return state;
   if (action.type === "DIALOGUE_ADVANCE") {
+    if (["conversation", "tactical"].includes(state.phase)) {
+      if (dialogueComplete(state)) return state;
+      return {
+        ...state,
+        phase: "conversation",
+        dialogueCursor: state.dialogueCursor + 1,
+      };
+    }
     if (state.phase !== "briefing" && state.phase !== "feedback") return state;
     return {
       ...state,
       phase: "conversation",
+      dialogueCursor: 0,
       pendingDecision: undefined,
       allocation: { ...state.allocation, supportEnergy: 0 },
     };
@@ -74,6 +84,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     };
   if (!["conversation", "tactical"].includes(state.phase)) return state;
   switch (action.type) {
+    case "DECISION_CANCEL":
+      return { ...state, phase: "conversation", pendingDecision: undefined };
     case "MAP_SELECT":
       if (!ROUTES.some((route) => route.id === action.nodeId)) return state;
       return { ...state, phase: "tactical", selectedRoute: action.nodeId };
@@ -90,6 +102,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, allocation: { supportEnergy, specialist } };
     }
     case "DECISION_PREVIEW": {
+      if (!dialogueComplete(state)) return state;
       const decision = getDecision(action.decision.id);
       if (!decision || decision.sceneId !== state.sceneId) return state;
       return { ...state, phase: "tactical", pendingDecision: decision };

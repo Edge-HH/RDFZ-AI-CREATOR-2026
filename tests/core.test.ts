@@ -11,13 +11,25 @@ import {
   applyEffects,
   createInitialState,
   decisionCheck,
+  dialogueComplete,
   evaluateEnding,
   terminalFailure,
 } from "../src/core/rules";
 import type { GameState } from "../src/core/types";
+function readDialogue(state: GameState): GameState {
+  while (
+    ["conversation", "tactical"].includes(state.phase) &&
+    !dialogueComplete(state)
+  )
+    state = gameReducer(state, { type: "DIALOGUE_ADVANCE" });
+  return state;
+}
 const start = (seed = 17062026) =>
-  gameReducer(createInitialState(seed), { type: "DIALOGUE_ADVANCE" });
+  readDialogue(
+    gameReducer(createInitialState(seed), { type: "DIALOGUE_ADVANCE" }),
+  );
 function act(s: GameState, id: string): GameState {
+  s = readDialogue(s);
   const d = getDecision(id)!;
   expect(
     decisionCheck(s, d).allowed,
@@ -48,6 +60,33 @@ const safe = [
   "ignition-all-cooling",
 ];
 describe("mission state machine", () => {
+  it("reveals dialogue one line at a time and rejects choices until the question", () => {
+    let s = gameReducer(createInitialState(), { type: "DIALOGUE_ADVANCE" });
+    const d = getDecision("prologue-scan")!;
+    expect(s.dialogueCursor).toBe(0);
+    expect(gameReducer(s, { type: "DECISION_PREVIEW", decision: d })).toBe(s);
+    expect(gameReducer(s, { type: "DECISION_CONFIRM", decision: d })).toBe(s);
+    const initial = s.resources;
+    s = gameReducer(s, { type: "DIALOGUE_ADVANCE", nextScene: "ignition" });
+    expect(s.sceneId).toBe("prologue");
+    expect(s.dialogueCursor).toBe(1);
+    expect(s.resources).toBe(initial);
+    s = readDialogue(s);
+    expect(decisionCheck(s, d).allowed).toBe(true);
+  });
+  it("lets the player reconsider a reply without spending or replaying dialogue", () => {
+    let s = start();
+    s = gameReducer(s, {
+      type: "DECISION_PREVIEW",
+      decision: getDecision("prologue-scan")!,
+    });
+    const before = s.resources;
+    s = gameReducer(s, { type: "DECISION_CANCEL" });
+    expect(s.pendingDecision).toBeUndefined();
+    expect(s.resources).toBe(before);
+    expect(dialogueComplete(s)).toBe(true);
+    expect(s.decisions).toHaveLength(0);
+  });
   it("only starts and advances feedback, never skips a decision", () => {
     let s = start();
     expect(
@@ -188,10 +227,11 @@ describe("content integrity and reachable outcomes", () => {
         return;
       }
       expect(depth).toBeLessThan(10);
-      const s =
+      const s = readDialogue(
         state.phase === "feedback"
           ? gameReducer(state, { type: "DIALOGUE_ADVANCE" })
-          : state;
+          : state,
+      );
       for (const d of getNode(s.sceneId)!.choices) {
         let candidate = s;
         if (s.sceneId === "route")

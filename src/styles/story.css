@@ -1,0 +1,508 @@
+/* Dialogue is the primary surface. Telemetry and Three.js remain in inspect sheets. */
+.story-shell {
+  max-width: 1100px;
+}
+.story-shell .mission-header {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 6px 0 18px;
+}
+.story-shell .mission-title {
+  min-width: 0;
+}
+.story-shell .mission-title h1 {
+  font-size: 20px;
+  letter-spacing: 0.12em;
+}
+.story-shell .header-metrics {
+  gap: 20px;
+  flex-wrap: nowrap;
+}
+.compact-metric {
+  display: grid;
+  gap: 4px;
+}
+.compact-metric small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.compact-metric strong {
+  font: 600 14px var(--mono);
+  color: var(--text);
+}
+.mission-menu {
+  position: relative;
+}
+.mission-menu summary,
+.allocation-details summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.mission-menu summary::after {
+  content: "⌄";
+}
+.menu-options {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  z-index: 8;
+  width: 190px;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+.menu-options button {
+  width: 100%;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  padding: 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.menu-options button:hover {
+  background: var(--surface-2);
+}
+.story-main {
+  width: min(800px, 100%);
+  margin: 36px auto 0;
+}
+.mission-objective {
+  margin-bottom: 26px;
+}
+.main-mission {
+  margin: 0 0 22px;
+  color: var(--cyan-soft);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.task-kicker {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.mission-objective h2 {
+  font-size: clamp(20px, 3vw, 27px);
+  line-height: 1.55;
+  font-weight: 600;
+  margin: 10px 0 0;
+  text-wrap: balance;
+}
+.conversation-stage {
+  border-top: 1px solid var(--border);
+}
+.channel-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 18px 0;
+}
+#dialogue-progress {
+  margin-left: auto;
+  font-family: var(--mono);
+}
+.story-shell .speaker-dot {
+  width: 6px;
+  height: 6px;
+  box-shadow: none;
+  background: var(--cyan-soft);
+}
+.story-shell .dialogue-stream {
+  display: flex;
+  flex-direction: column;
+  max-height: none;
+  overflow: visible;
+  padding: 6px 0 0;
+  gap: 22px;
+}
+.story-shell .dialogue-message {
+  display: block;
+  max-width: 100%;
+  text-align: left;
+}
+.story-shell .message-meta,
+.story-shell .player .message-meta {
+  justify-content: flex-start;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.story-shell .message-meta strong {
+  color: var(--text);
+  font-size: 13px;
+}
+.speaker-avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  color: var(--cyan-soft);
+  border-radius: 50%;
+  font-size: 13px;
+}
+.story-shell .message-bubble {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0 0 0 40px;
+  margin: 8px 0 0;
+  font-size: 18px;
+  line-height: 1.85;
+  color: var(--text);
+}
+.story-shell .previous-message .message-bubble {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.story-shell .previous-message .speaker-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+}
+.story-shell .previous-message .message-meta {
+  padding-left: 6px;
+}
+.story-shell .current-message .message-bubble {
+  animation: receive-message 0.2s ease-out;
+}
+@keyframes receive-message {
+  from {
+    transform: translateY(4px);
+  }
+  to {
+    transform: none;
+  }
+}
+.story-shell .decision-body {
+  padding: 22px 0 0 40px;
+}
+.story-shell .decision-grid {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.response-prompt {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0 0 12px;
+}
+.story-shell .decision-card {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  align-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 58px;
+  padding: 12px 16px;
+  background: var(--surface);
+  box-shadow: none;
+  border-radius: 6px;
+}
+.story-shell .decision-card:hover {
+  transform: none;
+  background: var(--surface-2);
+}
+.choice-number {
+  font: 12px var(--mono);
+  color: var(--muted);
+}
+.story-shell .decision-title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+.story-shell .decision-missing {
+  grid-column: 2;
+}
+.choice-review {
+  margin-top: 16px;
+}
+.choice-review > p {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.story-shell .selected-preview {
+  color: var(--cyan-soft);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.story-shell .selected-preview > span {
+  color: var(--muted);
+}
+.allocation-details {
+  margin: 8px 0 16px;
+  border-top: 1px solid var(--border);
+}
+.allocation-details summary {
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+}
+.allocation-details summary span {
+  color: var(--cyan-soft);
+}
+.allocation-details summary::after {
+  content: "+";
+}
+.allocation-details[open] summary::after {
+  content: "−";
+}
+.story-shell .allocation {
+  margin: 0;
+  padding: 10px 0;
+}
+.confirm-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.text-button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  min-height: 44px;
+  cursor: pointer;
+  padding: 8px;
+  white-space: nowrap;
+}
+.next-dialogue {
+  margin: 24px 0 0 40px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.next-dialogue > p {
+  width: 100%;
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+  line-height: 1.7;
+}
+.reading-hint {
+  color: var(--muted);
+  font-size: 11px;
+}
+.execution-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 0 0 40px;
+  font-size: 13px;
+  color: var(--cyan-soft);
+  min-height: 48px;
+}
+.result-chips {
+  margin: 18px 0 0 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.result-chips span {
+  background: var(--surface);
+  color: var(--muted);
+  padding: 7px 10px;
+  font-size: 11px;
+  border-radius: 4px;
+}
+.result-chips strong {
+  color: var(--text);
+  font: 500 11px var(--mono);
+}
+.support-tools {
+  display: flex;
+  gap: 24px;
+  padding: 16px 0 0 40px;
+  margin-top: 26px;
+  border-top: 1px solid var(--border);
+}
+.support-tools button {
+  cursor: pointer;
+  color: var(--muted);
+  min-height: 44px;
+  font-size: 12px;
+  padding: 6px 0;
+  background: transparent;
+  border: 0;
+}
+.support-tools button:hover {
+  color: var(--cyan-soft);
+}
+.story-note {
+  padding-left: 40px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin-top: 12px;
+}
+.support-dialog {
+  width: min(860px, calc(100% - 24px));
+  max-height: 90dvh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 20px;
+}
+.support-dialog::backdrop {
+  background: rgb(5 5 16 / 85%);
+}
+.support-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.support-heading h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.support-pane[hidden] {
+  display: none;
+}
+.support-dialog .map-body {
+  display: block;
+}
+.support-dialog .viewport-panel {
+  min-height: 0;
+}
+.support-dialog .resource-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.support-dialog .resource-card:last-child {
+  grid-column: 1 / -1;
+}
+.history-chapter {
+  margin-bottom: 30px;
+}
+.history-chapter h3 {
+  color: var(--cyan-soft);
+  font-size: 14px;
+}
+.history-chapter .dialogue-message {
+  margin: 16px 0;
+}
+.history-chapter .message-bubble {
+  font-size: 14px;
+}
+summary:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .story-shell .mission-header {
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0 12px;
+  }
+  .story-shell .mission-title h1 {
+    font-size: 16px;
+  }
+  .story-shell .mission-title p {
+    font-size: 10px;
+  }
+  .story-shell .header-metrics {
+    width: auto;
+    gap: 10px;
+  }
+  .compact-metric strong {
+    font-size: 11px;
+  }
+  .compact-metric small {
+    font-size: 10px;
+  }
+  .compact-metric:nth-child(2) {
+    display: none;
+  }
+  .story-shell .icon-button {
+    font-size: 12px;
+  }
+  .mission-menu summary {
+    font-size: 12px;
+  }
+  .story-main {
+    margin-top: 24px;
+  }
+  .main-mission {
+    margin-bottom: 16px;
+    font-size: 12px;
+  }
+  .task-kicker {
+    font-size: 11px;
+    gap: 8px;
+  }
+  .mission-objective {
+    margin-bottom: 18px;
+  }
+  .story-shell .dialogue-stream {
+    gap: 18px;
+  }
+  .story-shell .message-bubble {
+    font-size: 16px;
+    line-height: 1.85;
+    padding-left: 0;
+  }
+  .story-shell .previous-message .message-bubble {
+    font-size: 12px;
+  }
+  .story-shell .decision-body {
+    padding-left: 0;
+  }
+  .story-shell .decision-card {
+    min-height: 64px;
+    padding: 12px;
+  }
+  .story-shell .decision-title {
+    font-size: 14px;
+  }
+  .next-dialogue,
+  .execution-state,
+  .result-chips {
+    margin-left: 0;
+  }
+  .story-shell .next-dialogue .action-button {
+    width: auto;
+  }
+  .story-shell .confirm-row .action-button {
+    flex: 1;
+    width: auto;
+  }
+  .support-tools {
+    padding-left: 0;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .story-note {
+    padding-left: 0;
+  }
+  .support-dialog {
+    padding: 16px;
+  }
+  .allocation-details summary {
+    font-size: 11px;
+  }
+}

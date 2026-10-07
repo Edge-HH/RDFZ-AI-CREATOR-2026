@@ -42,6 +42,8 @@ export interface Decision {
   sceneId: string;
   label: string;
   intent: string;
+  reply?: string;
+  feedback?: { speaker: string; text: string };
   requires?: string[];
   preview: string;
   effects: Effect[];
@@ -122,6 +124,8 @@ export interface EndingResult {
 export interface GameState {
   phase: Phase;
   sceneId: string;
+  /** Index of the last revealed line; choices unlock only after the final line. */
+  dialogueCursor: number;
   seed: number;
   resources: ResourceState;
   crew: Record<CrewId, CrewMember>;
@@ -139,6 +143,7 @@ export type GameAction =
   | { type: "DIALOGUE_ADVANCE"; sceneId?: string; nextScene?: string }
   | { type: "MAP_SELECT"; nodeId: string }
   | { type: "DECISION_PREVIEW"; decision: Decision }
+  | { type: "DECISION_CANCEL" }
   | { type: "DECISION_CONFIRM"; decision: Decision }
   | { type: "ALLOCATE"; allocation: Partial<Allocation> }
   | { type: "EXECUTION_COMPLETE" }

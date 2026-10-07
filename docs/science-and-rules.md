@@ -61,3 +61,9 @@
 | 走有线接口 | time -70；supplies -5；commsConfidence +18；trust +5；progress +12.5 | calibration |
 | 保留电量，凭本地读数继续 | time -20；commsConfidence -25；safety -8；progress +12.5 | calibration |
 | 旁路增压：强行拉起点火曲线 | time -20；energy -10；supplies -14；safety -18；engineStability +26；crewHealth -15；progress +12.5 | ending |
+
+## 对话推进方式
+
+每个任务逐句展开，听完现场报告才出现回应；选择、核对代价、确认行动后，队员回传结果并显示真实变化，再进入下一段剧情。阅读与查看面板本身不扣游戏时间，只有执行方案及风险事件改变资源。资源公式、种子事件与结局阈值保持原规则。
+
+态势图、资源/人员详情和完整通信记录均按需打开；选择路线回应会同步地图节点，无 WebGL 时仍能完成全部任务。未确认前可重新选择，刷新保存对白进度与待确认回应。

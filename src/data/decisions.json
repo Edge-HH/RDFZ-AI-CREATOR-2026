@@ -27,7 +27,12 @@
       }
     ],
     "next": "loadout",
-    "eventId": "capsule-scan"
+    "eventId": "capsule-scan",
+    "reply": "先停下来复扫。沈葵，把缺失的低温记录补齐。",
+    "feedback": {
+      "speaker": "沈葵",
+      "text": "复扫结束，点火芯的低温曲线已经补齐。我们花掉了八分钟，但现在知道货舱里带着什么了。"
+    }
   },
   {
     "id": "prologue-depart",
@@ -57,7 +62,12 @@
       }
     ],
     "next": "loadout",
-    "eventId": "depart-with-uncertainty"
+    "eventId": "depart-with-uncertainty",
+    "reply": "先出发，边走边测。缺失的记录标红，别当作正常值。",
+    "feedback": {
+      "speaker": "裴衡",
+      "text": "车队已经驶出出口，赶上了这段风窗。运输舱继续监测；那段缺失记录还不能当作安全证明。"
+    }
   },
   {
     "id": "prologue-question",
@@ -91,7 +101,12 @@
       }
     ],
     "next": "loadout",
-    "eventId": "tower-disclosure"
+    "eventId": "tower-disclosure",
+    "reply": "先接通塔区。我要知道那段记录为什么消失。",
+    "feedback": {
+      "speaker": "中央调度",
+      "text": "塔区补传了维护交接记录：传感器曾短暂离线。原因已记录，但点火芯的低温状态仍需我们现场核验。"
+    }
   },
   {
     "id": "loadout-cooling",
@@ -126,7 +141,12 @@
       }
     ],
     "next": "route",
-    "eventId": "load-cooling"
+    "eventId": "load-cooling",
+    "reply": "带备用冷却。到了塔下，我们必须有条件把它点起来。",
+    "feedback": {
+      "speaker": "沈葵",
+      "text": "备用冷却桶已经固定。塔下多了一份热管理余量；我们就没有空间再带大电池和锚索了。"
+    }
   },
   {
     "id": "loadout-battery",
@@ -161,7 +181,12 @@
       }
     ],
     "next": "route",
-    "eventId": "load-battery"
+    "eventId": "load-battery",
+    "reply": "带大电池。先给车队和通信留下足够的电量。",
+    "feedback": {
+      "speaker": "裴衡",
+      "text": "电池包接入完成，路线和通信的余量宽一些了。沈葵已经记下：塔下的冷却冗余要靠现有设备撑住。"
+    }
   },
   {
     "id": "loadout-anchor",
@@ -191,7 +216,12 @@
       }
     ],
     "next": "route",
-    "eventId": "load-anchors"
+    "eventId": "load-anchors",
+    "reply": "带医疗包和锚索。先保证遇到险情时，人和车能退回来。",
+    "feedback": {
+      "speaker": "阿阮",
+      "text": "医疗包和锚索都在车上。受伤后能及时处理，冰架上也有撤退手段；后面的冷却和电量要更精打细算。"
+    }
   },
   {
     "id": "route-select-south",
@@ -226,7 +256,12 @@
       }
     ],
     "next": "ice-event",
-    "eventId": "select-south"
+    "eventId": "select-south",
+    "reply": "走南坡。裴衡控制轮组功率，全队盯住冰架裂缝。",
+    "feedback": {
+      "speaker": "裴衡",
+      "text": "车队转入南坡，短线节省了行驶时间，爬坡却吃掉更多电量。前方冰架开始错层，我把裂缝位置发给你。"
+    }
   },
   {
     "id": "route-select-west",
@@ -261,7 +296,12 @@
       }
     ],
     "next": "steam-event",
-    "eventId": "select-west"
+    "eventId": "select-west",
+    "reply": "绕西沟。用更长的路换缓坡，提前准备应对蒸汽盲区。",
+    "feedback": {
+      "speaker": "裴衡",
+      "text": "我们已经转入西沟。缓坡减轻了轮组负担，路程和物资消耗都增加了。蒸汽正在升高，阿阮的链路开始衰减。"
+    }
   },
   {
     "id": "ice-anchor-fallback",
@@ -296,7 +336,12 @@
       }
     ],
     "next": "relay",
-    "eventId": "ice-anchor-fallback"
+    "eventId": "ice-anchor-fallback",
+    "reply": "先把车锚住。确认底下有支撑，再通过错层。",
+    "feedback": {
+      "speaker": "裴衡",
+      "text": "锚索已经受力，车体稳住了。我们等过了这轮冰架移动，也消耗了一部分物资；撤退的路线还在。"
+    }
   },
   {
     "id": "ice-drone-scan",
@@ -335,7 +380,12 @@
       }
     ],
     "next": "relay",
-    "eventId": "ice-drone-scan"
+    "eventId": "ice-drone-scan",
+    "reply": "停一下，让无人机探路。我不想把车压在看不见的裂缝上。",
+    "feedback": {
+      "speaker": "阿阮",
+      "text": "无人机标出了能承重的冰带，车队按新轨迹通过。扫描用掉了电量，但下一段不必再靠猜。"
+    }
   },
   {
     "id": "ice-push-through",
@@ -374,7 +424,12 @@
       }
     ],
     "next": "relay",
-    "eventId": "ice-push-through"
+    "eventId": "ice-push-through",
+    "reply": "保持移动，压过错层。所有人固定好，随时报告异常。",
+    "feedback": {
+      "speaker": "裴衡",
+      "text": "车队通过了错层带，省下了停车时间。颠簸已经传进车体和运输舱，这笔安全代价不能从记录里抹掉。"
+    }
   },
   {
     "id": "steam-relay",
@@ -413,7 +468,12 @@
       }
     ],
     "next": "relay",
-    "eventId": "steam-relay"
+    "eventId": "steam-relay",
+    "reply": "开备用中继。先把蒸汽后面的数据传回来。",
+    "feedback": {
+      "speaker": "阿阮",
+      "text": "备用中继接通，体征和车况重新回到同一个频道。电量减少了，但我们可以继续同步行动。"
+    }
   },
   {
     "id": "steam-low-signal",
@@ -447,7 +507,12 @@
       }
     ],
     "next": "relay",
-    "eventId": "steam-low-signal"
+    "eventId": "steam-low-signal",
+    "reply": "低速驶出雾区。暂时只用本地读数，保住中继电量。",
+    "feedback": {
+      "speaker": "裴衡",
+      "text": "车辆已经驶出最浓的蒸汽，备用电量保住了。远端数据依然断续，我们得带着这段盲区继续判断。"
+    }
   },
   {
     "id": "steam-old-tunnel",
@@ -486,7 +551,12 @@
       }
     ],
     "next": "relay",
-    "eventId": "steam-old-tunnel"
+    "eventId": "steam-old-tunnel",
+    "reply": "周砾带路，走旧井道的有线接口。全队跟紧。",
+    "feedback": {
+      "speaker": "周砾",
+      "text": "旧接口还能用。我们绕过蒸汽层，花了时间和维修材料，把数据送回公共频道。"
+    }
   },
   {
     "id": "relay-calibrate-stop",
@@ -525,7 +595,12 @@
       }
     ],
     "next": "mount",
-    "eventId": "precalibrate-stop"
+    "eventId": "precalibrate-stop",
+    "reply": "停车校准。把这一位对齐，再送进磁腔。",
+    "feedback": {
+      "speaker": "沈葵",
+      "text": "低温校验位已经对齐。我们让出了时间窗口，换来了更稳定的塔端相位；这枚芯可以进入下一步维修。"
+    }
   },
   {
     "id": "relay-calibrate-moving",
@@ -563,7 +638,12 @@
       }
     ],
     "next": "mount",
-    "eventId": "precalibrate-moving"
+    "eventId": "precalibrate-moving",
+    "reply": "边走边校准。沈葵报出误差，裴衡把车速压稳。",
+    "feedback": {
+      "speaker": "沈葵",
+      "text": "行驶校准完成，误差已收窄，但运输震动还在。比停车省了时间，安全和电量余量也更紧了。"
+    }
   },
   {
     "id": "relay-skip-calibration",
@@ -589,7 +669,12 @@
       }
     ],
     "next": "mount",
-    "eventId": "precalibrate-skip"
+    "eventId": "precalibrate-skip",
+    "reply": "先到塔下，把完整校验留到最后一次接入。",
+    "feedback": {
+      "speaker": "沈葵",
+      "text": "预校准跳过了，车队继续进塔区。校验差异仍然存在，它会影响塔下接入的稳定度。"
+    }
   },
   {
     "id": "mount-purge-safe",
@@ -633,7 +718,12 @@
       }
     ],
     "next": "ignition",
-    "eventId": "safe-restart"
+    "eventId": "safe-restart",
+    "reply": "先泄压、净化。磁腔可控之后，再降功率重启。",
+    "feedback": {
+      "speaker": "周砾",
+      "text": "泄压和净化完成，磁腔已恢复可控。材料和时间都付出了，现在能把点火芯接入冷却链。"
+    }
   },
   {
     "id": "mount-bypass",
@@ -678,7 +768,12 @@
       }
     ],
     "next": "ignition",
-    "eventId": "bypass-ignition"
+    "eventId": "bypass-ignition",
+    "reply": "旁路直连。先拉起回路，阿阮盯住人员保护阈值。",
+    "feedback": {
+      "speaker": "周砾",
+      "text": "旁路已经接通，接入时间缩短了。完整净化没有完成，保护余量明显下降，下一步点火要承担这份风险。"
+    }
   },
   {
     "id": "mount-remote-align",
@@ -717,7 +812,12 @@
       }
     ],
     "next": "ignition",
-    "eventId": "remote-align"
+    "eventId": "remote-align",
+    "reply": "用远程机械臂对齐。人员留在保护区，交叉核验接口。",
+    "feedback": {
+      "speaker": "阿阮",
+      "text": "远程对齐完成，人员没有直接进入最危险的接入位置。通信和电量承担了更多负荷，接口数据已经交给沈葵。"
+    }
   },
   {
     "id": "ignition-all-cooling",
@@ -760,7 +860,12 @@
       }
     ],
     "next": "ending",
-    "eventId": "stable-ignition"
+    "eventId": "stable-ignition",
+    "reply": "投入全部冷却芯。先把环弧—7带回稳态。",
+    "feedback": {
+      "speaker": "沈葵",
+      "text": "全部冷却芯已经投入，点火曲线开始上升。下一座塔的补给余量没有留下，我们会在最终报告里写明。"
+    }
   },
   {
     "id": "ignition-reserve-next",
@@ -803,7 +908,12 @@
       }
     ],
     "next": "ending",
-    "eventId": "partial-ignition"
+    "eventId": "partial-ignition",
+    "reply": "留一半给下一座塔。这座塔按有限冷却功率点火。",
+    "feedback": {
+      "speaker": "沈葵",
+      "text": "按有限冷却功率完成点火，剩余冷却芯已封存。输出稳定度低于完整投入，下一座塔还保有一份余量。"
+    }
   },
   {
     "id": "ignition-delay-crew",
@@ -838,7 +948,12 @@
       }
     ],
     "next": "ending",
-    "eventId": "crew-first-delay"
+    "eventId": "crew-first-delay",
+    "reply": "先把队员全部撤出来。取消这次点火，芯随车带走。",
+    "feedback": {
+      "speaker": "阿阮",
+      "text": "全队撤出磁扰区，点火命令已取消。我们保住了人员与点火芯，环弧—7没有完成重启。"
+    }
   },
   {
     "id": "relay-build",
@@ -876,7 +991,12 @@
     ],
     "next": "calibration",
     "requires": [],
-    "eventId": "relay-build"
+    "eventId": "relay-build",
+    "reply": "架设中继。校准之前，所有人先拿到同一份数据。",
+    "feedback": {
+      "speaker": "阿阮",
+      "text": "中继架设完成，塔端与车队恢复了公共频道。后续远程分工有了条件；电池里也确实少了一段余量。"
+    }
   },
   {
     "id": "relay-wired",
@@ -913,7 +1033,12 @@
     ],
     "next": "calibration",
     "requires": ["trust>=45"],
-    "eventId": "relay-wired"
+    "eventId": "relay-wired",
+    "reply": "用有线接口。周砾定位线路，阿阮核对数据。",
+    "feedback": {
+      "speaker": "周砾",
+      "text": "维护线接通了，塔端数据稳定回传。铺线占用了时间和材料，不过电量消耗比无线中继低。"
+    }
   },
   {
     "id": "relay-blind",
@@ -942,7 +1067,12 @@
     ],
     "next": "calibration",
     "requires": [],
-    "eventId": "relay-blind"
+    "eventId": "relay-blind",
+    "reply": "保留电量，用本地读数继续。未知部分全部记入报告。",
+    "feedback": {
+      "speaker": "阿阮",
+      "text": "收到。公共链路仍不完整，现场读数由你接管。依赖完整通信的远程方案，现在不能使用。"
+    }
   },
   {
     "id": "ignition-overdrive",
@@ -989,6 +1119,11 @@
     ],
     "next": "ending",
     "requires": ["flag:bypass", "energy>=10", "supplies>=14"],
-    "eventId": "ignition-overdrive"
+    "eventId": "ignition-overdrive",
+    "reply": "执行旁路增压。把保护阈值报给我，所有风险由我签字。",
+    "feedback": {
+      "speaker": "阿阮",
+      "text": "旁路增压执行，推力曲线被强行拉起。安全余量已经交给这次点火，人员状态必须逐一写进报告。"
+    }
   }
 ]
