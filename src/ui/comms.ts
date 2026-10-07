@@ -20,8 +20,27 @@ export class Comms {
   private skipping = false;
   private wake: (() => void) | null = null;
 
+  // 贴底：除非玩家主动往上翻，否则消息列表始终停在最新一条。
+  // 程序设置 scrollTop 也会异步触发 scroll 事件，所以只在玩家真实操作后才重新判断是否贴底。
+  private stick = true;
+  private userScrollUntil = 0;
+
   constructor(public feed: HTMLElement, private settings: () => Settings) {
     feed.addEventListener('click', () => this.skip());
+    const markUser = () => { this.userScrollUntil = performance.now() + 800; };
+    for (const ev of ['wheel', 'touchstart', 'touchmove', 'pointerdown', 'keydown']) feed.addEventListener(ev, markUser, { passive: true });
+    feed.addEventListener('scroll', () => {
+      if (performance.now() > this.userScrollUntil) return;
+      this.stick = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 48;
+    });
+    // 底部按钮区出现或变高时，列表可视高度变小，需要重新贴底
+    new ResizeObserver(() => this.follow()).observe(feed);
+  }
+
+  // 布局变化后在下一帧贴底（玩家主动上翻时不打扰）
+  follow(): void {
+    if (!this.stick) return;
+    requestAnimationFrame(() => { this.feed.scrollTop = this.feed.scrollHeight; });
   }
 
   skip(): void {
@@ -94,6 +113,7 @@ export class Comms {
   }
 
   private scroll(): void {
+    this.stick = true;
     this.feed.scrollTop = this.feed.scrollHeight;
   }
 }

@@ -1,47 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-
-// 自动通关：每一步点击当前可见的、优先级最高的控件
-async function step(page: Page): Promise<'ending' | 'acted' | 'idle'> {
-  if (await page.getByRole('button', { name: '再次挑战' }).isVisible()) return 'ending';
-  const overlay = page.locator('.overlay');
-  if (await overlay.isVisible()) {
-    if (await overlay.locator('.mod').first().isVisible()) {
-      for (const name of ['裂变电源', '大型太阳能阵列', 'MOXIE-X 制氧机', '密闭温室', '水墙屏蔽舱', '备件包']) {
-        await overlay.locator('.mod', { hasText: name }).click();
-      }
-      await overlay.getByRole('button', { name: '确认配载' }).click();
-      return 'acted';
-    }
-    if (await overlay.locator('.site').first().isVisible()) {
-      await overlay.locator('.site').first().click();
-      await overlay.getByRole('button', { name: '锁定着陆点' }).click();
-      return 'acted';
-    }
-    if (await overlay.locator('.preset').first().isVisible()) {
-      const cards = overlay.locator('.preset');
-      for (let i = 0; i < 3; i++) await cards.nth(i).click();
-      await overlay.getByRole('button', { name: '写入预案并上传' }).click();
-      return 'acted';
-    }
-    if (await overlay.locator('.auto-opt').first().isVisible()) {
-      await overlay.locator('.auto-opt').nth(2).click();
-      await overlay.getByRole('button', { name: '确认授权' }).click();
-      return 'acted';
-    }
-    for (const name of ['开始', '继续']) {
-      const b = overlay.getByRole('button', { name, exact: true });
-      if (await b.isVisible()) { await b.click(); return 'acted'; }
-    }
-  }
-  const area = page.locator('.action-area');
-  const opt = area.locator('button.opt:not([disabled])').first();
-  if (await opt.isVisible()) { await opt.click(); return 'acted'; }
-  const send = area.getByRole('button', { name: /发送自检指令/ });
-  if (await send.isVisible()) { await send.click(); return 'acted'; }
-  const cont = area.getByRole('button', { name: '继续', exact: true });
-  if (await cont.isVisible()) { await cont.click(); return 'acted'; }
-  return 'idle';
-}
+import { expect, test } from '@playwright/test';
+import { step } from './helpers';
 
 test('从标题开始，完整通关到结局，并能再次挑战', async ({ page }) => {
   const errors: string[] = [];
@@ -82,4 +40,68 @@ test('不发出任何外部网络请求', async ({ page }) => {
   await page.getByRole('button', { name: '开始任务' }).click();
   for (let i = 0; i < 30; i++) { if ((await step(page)) === 'idle') await page.waitForTimeout(60); }
   expect(external).toEqual([]);
+});
+
+test('从标题页打开说明、档案、设置后再开始任务，标题页完全消失', async ({ page }) => {
+  await page.goto('/?seed=3&fast=1');
+  for (const name of ['玩法与依据', '知识档案集', '设置']) {
+    await page.locator('.title-screen').getByRole('button', { name }).click();
+    await page.locator('.overlay .sheet-foot button.primary').click();
+  }
+  await page.getByRole('button', { name: '开始任务' }).click();
+  await expect(page.locator('.title-screen')).toHaveCount(0);
+  for (let i = 0; i < 8; i++) { if ((await step(page)) === 'idle') await page.waitForTimeout(60); }
+  // 存档后回到标题，再从设置返回并继续任务
+  await page.reload();
+  await page.locator('.title-screen').getByRole('button', { name: '设置' }).click();
+  await page.locator('.overlay .sheet-foot button.primary').click();
+  await page.getByRole('button', { name: '继续任务' }).click();
+  await expect(page.locator('.title-screen')).toHaveCount(0);
+});
+
+test('标题页与顶栏提供项目仓库链接', async ({ page }) => {
+  await page.goto('/?fast=1');
+  const link = page.locator('.title-screen').getByRole('link', { name: /项目仓库/ });
+  await expect(link).toHaveAttribute('href', 'https://github.com/Edge-HH/RDFZ-AI-CREATOR-2026');
+  await expect(link).toHaveAttribute('target', '_blank');
+  await page.getByRole('button', { name: '开始任务' }).click();
+  await expect(page.locator('.topbar').getByRole('link', { name: /项目仓库/ })).toHaveCount(1);
+});
+
+test('解锁新知识时弹出档案卡，并收入知识档案集', async ({ page }) => {
+  await page.goto('/?seed=11&fast=1');
+  await page.getByRole('button', { name: '开始任务' }).click();
+  let card = false;
+  for (let i = 0; i < 40 && !card; i++) {
+    card = await page.locator('.discovery').isVisible();
+    if (!card && (await step(page, { keepDiscovery: true })) === 'idle') await page.waitForTimeout(60);
+  }
+  expect(card).toBe(true);
+  await expect(page.locator('.discovery h3')).toHaveText('光速延迟');
+  await expect(page.locator('.discovery a[target="_blank"]').first()).toBeVisible();
+  await page.locator('.discovery').getByRole('button', { name: '收入知识档案集' }).click();
+  await page.locator('.topbar').getByRole('button', { name: '知识档案集' }).click();
+  await expect(page.locator('.overlay .arch:not(.locked) h4', { hasText: '光速延迟' })).toBeVisible();
+});
+
+test('通信频道最新一条消息不会被底部按钮遮挡', async ({ page }) => {
+  await page.goto('/?seed=5&fast=1');
+  await page.getByRole('button', { name: '开始任务' }).click();
+  let checked = 0;
+  for (let i = 0; i < 160 && checked < 12; i++) {
+    const cont = page.locator('.action-area').getByRole('button', { name: '继续', exact: true });
+    const opts = page.locator('.action-area button.opt');
+    if (!(await page.locator('.overlay').isVisible()) && ((await cont.isVisible()) || (await opts.first().isVisible()))) {
+      await page.waitForTimeout(120);
+      const gap = await page.evaluate(() => {
+        const feed = document.querySelector('.feed')!;
+        const last = [...feed.querySelectorAll('.msg')].at(-1)!;
+        return last.getBoundingClientRect().bottom - feed.getBoundingClientRect().bottom;
+      });
+      expect(gap).toBeLessThanOrEqual(2);
+      checked++;
+    }
+    if ((await step(page)) === 'idle') await page.waitForTimeout(60);
+  }
+  expect(checked).toBeGreaterThanOrEqual(12);
 });

@@ -1,10 +1,23 @@
 import type { Chapter } from '../core/content';
 import { DOSE_LIMIT, rateMission, SCI_HIGH, type EndingId } from '../core/endings';
 import type { HistoryEntry, MissionState, Mode } from '../core/types';
-import { ARCHIVE } from '../content/archive';
+import { ARCHIVE, type ArchiveCard } from '../content/archive';
 import { ENDINGS } from '../content/endings';
 import { SERIES, historyChart } from './charts';
 import { h, ICON, svg } from './dom';
+
+export const REPO_URL = 'https://github.com/Edge-HH/RDFZ-AI-CREATOR-2026';
+
+export const repoLink = (cls: string, withText: boolean) =>
+  h(`a.${cls}`, { href: REPO_URL, target: '_blank', rel: 'noopener noreferrer', 'aria-label': '项目仓库（GitHub，新窗口打开）', title: '项目仓库' },
+    svg(ICON.github), withText ? '项目仓库' : null);
+
+const linkList = (a: ArchiveCard) => (a.links?.length
+  ? h('div.links', {}, a.links.map((l) => h('a', { href: l.url, target: '_blank', rel: 'noopener noreferrer' }, svg(ICON.link), l.label)))
+  : null);
+
+const archCard = (a: ArchiveCard, cls = '') =>
+  h('div.arch', { class: cls }, h('h4', {}, a.title), h('p', {}, a.body), h('div.g', {}, `游戏中：${a.game}`), h('div.s', {}, `来源：${a.source}`), linkList(a));
 import type { Settings } from './store';
 
 function overlay(cls: string, ...children: HTMLElement[]): HTMLElement {
@@ -33,8 +46,10 @@ export function titleScreen(opts: { hasSave: boolean; onNew: (mode: Mode) => voi
       h('div.hint', {}, '叙事模式：资源消耗与负面影响减半，适合想专注剧情的玩家。'),
       h('div.mode-pick', {},
         h('button.btn.ghost', { type: 'button', onclick: opts.onRules }, svg(ICON.info), '玩法与依据'),
-        h('button.btn.ghost', { type: 'button', onclick: opts.onArchive }, svg(ICON.book), '科学档案')),
-      h('button.btn.ghost', { type: 'button', onclick: opts.onSettings }, svg(ICON.gear), '设置')),
+        h('button.btn.ghost', { type: 'button', onclick: opts.onArchive }, svg(ICON.book), '知识档案集')),
+      h('div.mode-pick', {},
+        h('button.btn.ghost', { type: 'button', onclick: opts.onSettings }, svg(ICON.gear), '设置'),
+        repoLink('btn.ghost', true))),
     h('p.foot-note', {}, '无需注册登录 · 不收集任何个人信息 · 完全离线运行', h('br'), '故事与人物为虚构；科学数据来自公开文献，详见“玩法与依据”。')));
   return o;
 }
@@ -92,9 +107,8 @@ export function endingScreen(s: MissionState, ending: EndingId, newArchive: stri
         h('h4', {}, '五维资源曲线'), chart.svg, chart.legend,
         h('h4', {}, '关键转折'),
         h('ul.decisions', {}, keys.slice(-8).map((k) => h('li.key', {}, `第 ${k.day} 天 · ${k.label}`))))),
-    h('h4', {}, `本局解锁的科学档案（${s.archive.length}）`),
-    h('div.archive-grid', {}, s.archive.map((id) => ARCHIVE.find((a) => a.id === id)).filter(Boolean).map((a) =>
-      h('div.arch', { class: newArchive.includes(a!.id) ? 'new' : '' }, h('h4', {}, a!.title), h('p', {}, a!.body), h('div.g', {}, `游戏中：${a!.game}`), h('div.s', {}, `来源：${a!.source}`)))),
+    h('h4', {}, `本局解锁的知识档案（${s.archive.length}）`),
+    h('div.archive-grid', {}, s.archive.map((id) => ARCHIVE.find((a) => a.id === id)).filter(Boolean).map((a) => archCard(a!, newArchive.includes(a!.id) ? 'new' : ''))),
     h('div.sheet-foot', {},
       h('span.hint', {}, '换一个着陆点、能源路线或授权方式，故事会走向不同的结局。共 7 个结局。'), h('span.spacer'),
       h('button.btn', { type: 'button', onclick: () => { o.remove(); onTitle(); } }, '回到标题'),
@@ -103,11 +117,24 @@ export function endingScreen(s: MissionState, ending: EndingId, newArchive: stri
 
 export function archiveScreen(unlocked: Set<string>, onClose: () => void): void {
   const o = overlay('overlay', h('div.sheet', {},
-    h('div.sheet-head', {}, h('div', {}, h('h2', {}, `科学档案 ${unlocked.size} / ${ARCHIVE.length}`), h('p', {}, '在任务中做出相关决策即可解锁。'))),
+    h('div.sheet-head', {}, h('div', {}, h('h2', {}, `知识档案集 ${ARCHIVE.filter((a) => unlocked.has(a.id)).length} / ${ARCHIVE.length}`), h('p', {}, '在任务中做出相关决策、取得科研进展即可解锁。档案会跨局保存。'))),
     h('div.archive-grid', {}, ARCHIVE.map((a) => unlocked.has(a.id)
-      ? h('div.arch', {}, h('h4', {}, a.title), h('p', {}, a.body), h('div.g', {}, `游戏中：${a.game}`), h('div.s', {}, `来源：${a.source}`))
+      ? archCard(a)
       : h('div.arch.locked', {}, h('h4', {}, '？？？'), h('p', {}, '尚未解锁')))),
     h('div.sheet-foot', {}, h('span.spacer'), h('button.btn.primary', { type: 'button', onclick: () => { o.remove(); onClose(); } }, '关闭'))));
+}
+
+// 新知识弹窗：取得科研进展或做出相关决策时展示
+export function discoveryCard(a: ArchiveCard, index: number, total: number, onClose: () => void): void {
+  const o = overlay('overlay', h('div.sheet.narrow.discovery', { 'aria-labelledby': 'disc-title' },
+    h('div.disc-k', {}, svg(ICON.book), total > 1 ? `新知识 ${index}/${total}` : '新知识'),
+    h('h3#disc-title', {}, a.title),
+    h('p.disc-body', {}, a.body),
+    h('div.g', {}, `游戏中：${a.game}`),
+    h('div.s', {}, `来源：${a.source}`),
+    linkList(a),
+    h('div.sheet-foot', {}, h('span.hint', {}, '已同步收入「知识档案集」，可随时在顶栏查看。'), h('span.spacer'),
+      h('button.btn.primary', { type: 'button', onclick: () => { o.remove(); onClose(); } }, svg(ICON.check), '收入知识档案集'))));
 }
 
 export function rulesScreen(onClose: () => void): void {
@@ -122,7 +149,7 @@ export function rulesScreen(onClose: () => void): void {
       h('li', {}, '预案卡：在通信盲区（着陆七分钟、日凌两周）之前写下“若……则……”。'),
       h('li', {}, '授权度：放手越多，乘组越果断，但也可能做出你不认同的决定。'))),
     sec('结局', '共 7 个结局，按“乘员状态 × 科研产出 × 是否返回”判定，另有 S–D 评级。每局结束后可以立即重新挑战。'),
-    sec('科学依据', '轨道、延迟、日凌由圆轨道模型实时计算；辐射剂量率取自好奇号 RAD 实测；沙尘暴参照 2018 年全球沙尘暴；制氧、裂变电源、萨巴蒂尔反应等均有公开资料。完整数据与来源见随包的 docs/SCIENCE.md。'),
+    sec('科学依据', '轨道、延迟、日凌由圆轨道模型实时计算；辐射剂量率取自好奇号 RAD 实测；沙尘暴参照 2018 年全球沙尘暴；制氧、裂变电源、萨巴蒂尔反应等均有公开资料。每张知识档案都附有来源与链接，完整数据见项目仓库中的 docs/SCIENCE.md。', h('p', {}, repoLink('btn.ghost', true))),
     sec('声明', '人物与“远航一号”等情节为虚构。本游戏只使用火星地图，不涉及中国地图。无需注册登录，不收集任何个人信息，存档仅保存在你自己的浏览器里。'),
     h('div.sheet-foot', {}, h('span.spacer'), h('button.btn.primary', { type: 'button', onclick: () => { o.remove(); onClose(); } }, '知道了'))));
 }

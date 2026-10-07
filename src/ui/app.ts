@@ -10,7 +10,8 @@ import { Comms } from './comms';
 import { choiceOptions, openAutonomy, openLoadout, openPresets, openSite, uplink } from './decisions';
 import { clear, h, ICON, svg } from './dom';
 import { Hud } from './hud';
-import { archiveScreen, chapterCard, chapterEnd, endingScreen, rulesScreen, settingsScreen, titleScreen, toast } from './screens';
+import { archiveScreen, chapterCard, chapterEnd, discoveryCard, endingScreen, repoLink, rulesScreen, settingsScreen, titleScreen, toast } from './screens';
+import { archiveById } from '../content/archive';
 import { load, loadSettings, remove, save, saveSettings, type Settings } from './store';
 
 const CAPTIONS: Record<SceneCue, string> = {
@@ -47,6 +48,7 @@ export class App {
   private chapterStartHist = 0;
   private advance: (() => void) | null = null;
   private running = 0;
+  private seenArchive = new Set<string>();
 
   constructor(root: HTMLElement, private stage: Stage) {
     this.chapterLabel = h('div.chapter', {}, '');
@@ -62,7 +64,8 @@ export class App {
       this.chapterLabel,
       h('span.spacer'),
       h('div.chips', {}, this.delayChip),
-      h('button.icon-btn', { type: 'button', 'aria-label': '科学档案', title: '科学档案', onclick: () => archiveScreen(this.unlocked(), () => {}) }, svg(ICON.book)),
+      h('button.icon-btn', { type: 'button', 'aria-label': '知识档案集', title: '知识档案集', onclick: () => archiveScreen(this.unlocked(), () => {}) }, svg(ICON.book)),
+      repoLink('icon-btn', false),
       h('button.icon-btn', { type: 'button', 'aria-label': '玩法与依据', title: '玩法与依据', onclick: () => rulesScreen(() => {}) }, svg(ICON.info)),
       muteBtn,
       h('button.icon-btn', { type: 'button', 'aria-label': '设置', title: '设置', onclick: () => settingsScreen(this.settings, (s) => this.applySettings(s), () => {}) }, svg(ICON.gear)));
@@ -76,6 +79,7 @@ export class App {
     root.append(h('main.layout', {}, topbar, hudEl, h('div.stage-col', {}, this.caption), comms));
     this.hud = new Hud(hudEl);
     this.comms = new Comms(feed, () => this.settings);
+    new MutationObserver(() => this.comms.follow()).observe(this.area, { childList: true, subtree: true });
     document.addEventListener('keydown', (e) => this.onKey(e));
   }
 
@@ -108,18 +112,38 @@ export class App {
   showTitle(): void {
     setAmbience('control', this.settings);
     this.stage.setScene('control', null);
+    document.querySelectorAll('.title-screen, .overlay').forEach((el) => el.remove());
     const saved = load<string | null>('save', null);
     titleScreen({
       hasSave: !!saved,
       onNew: (mode) => this.newGame(mode),
-      onContinue: () => this.continueGame(saved!),
-      onArchive: () => archiveScreen(this.unlocked(), () => this.showTitle()),
-      onRules: () => rulesScreen(() => this.showTitle()),
-      onSettings: () => settingsScreen(this.settings, (s) => this.applySettings(s), () => this.showTitle()),
+      onContinue: () => this.continueGame(load<string | null>('save', null) ?? ''),
+      onArchive: () => archiveScreen(this.unlocked(), () => {}),
+      onRules: () => rulesScreen(() => {}),
+      onSettings: () => settingsScreen(this.settings, (s) => this.applySettings(s), () => {}),
     });
   }
 
+  private clearScreens(): void {
+    document.querySelectorAll('.title-screen, .overlay').forEach((el) => el.remove());
+  }
+
+  // 新解锁的知识：逐张弹出，并立即写入跨局的知识档案集
+  private async showDiscoveries(): Promise<void> {
+    const fresh = this.game.state.archive.filter((id) => !this.seenArchive.has(id));
+    if (!fresh.length) return;
+    for (const id of fresh) this.seenArchive.add(id);
+    save('archive', [...new Set([...this.unlocked(), ...fresh])]);
+    const cards = fresh.map((id) => archiveById(id)).filter((a) => !!a);
+    for (let i = 0; i < cards.length; i++) {
+      sfx('chapter', this.settings);
+      await new Promise<void>((r) => discoveryCard(cards[i]!, i + 1, cards.length, r));
+    }
+  }
+
   private newGame(mode: Mode): void {
+    this.clearScreens();
+    this.seenArchive = new Set();
     const fixed = Number(new URLSearchParams(location.search).get('seed'));
     const seed = Number.isFinite(fixed) && fixed > 0 ? fixed : Math.floor(Math.random() * 1e9);
     this.game = new Game(CHAPTERS, seed, mode);
@@ -130,6 +154,7 @@ export class App {
   }
 
   private continueGame(json: string): void {
+    this.clearScreens();
     try {
       this.game = Game.restore(CHAPTERS, json);
     } catch {
@@ -139,6 +164,7 @@ export class App {
     }
     this.chapterShown = this.game.chapterIdx;
     this.chapterStartHist = this.game.state.history.length;
+    this.seenArchive = new Set(this.game.state.archive);
     clear(this.comms.feed);
     this.comms.divider('从存档恢复');
     void this.loop();
@@ -171,9 +197,10 @@ export class App {
     while (token === this.running) {
       const v = this.game.view();
       save('save', this.game.serialize());
-      if (v.stage === 'ending') return this.finish();
+      if (v.stage === 'ending') { await this.showDiscoveries(); return this.finish(); }
       if (v.stage === 'chapterEnd') {
         this.refresh();
+        await this.showDiscoveries();
         const decisions = this.game.state.history.slice(this.chapterStartHist);
         await new Promise<void>((r) => chapterEnd(v.chapter, this.game.state.history[this.chapterStartHist - 1], this.game.state, decisions, r));
         this.game.next();
@@ -208,6 +235,7 @@ export class App {
       await this.waitContinue();
       this.game.next();
       this.refresh();
+      await this.showDiscoveries();
       return;
     }
     const input = await this.decide(v);
@@ -216,6 +244,7 @@ export class App {
     this.comms.you(this.describeInput(input, res.label), this.game.state);
     this.refresh();
     await this.comms.play(res.lines, this.game.state);
+    await this.showDiscoveries();
     if (this.game.view().stage === 'beat' || res.lines.length) await this.waitContinue();
     this.refresh();
   }
@@ -268,9 +297,9 @@ export class App {
 
   private finish(): void {
     const s = this.game.state;
-    const before = this.unlocked();
-    const all = new Set([...before, ...s.archive]);
-    save('archive', [...all]);
+    const before = new Set(load<string[]>('endingArchiveBase', []));
+    save('archive', [...new Set([...this.unlocked(), ...s.archive])]);
+    save('endingArchiveBase', [...new Set([...before, ...s.archive])]);
     remove('save');
     const endings = new Set(load<string[]>('endings', []));
     endings.add(this.game.ending!);
