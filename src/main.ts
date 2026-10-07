@@ -433,7 +433,18 @@ document.addEventListener("visibilitychange", () => {
   );
 });
 document.addEventListener("keydown", (event) => {
-  if (document.querySelector("dialog[open]")) return;
+  if (document.querySelector("dialog[open]")) {
+    if (
+      supportPanel === "map" &&
+      event.key.toLowerCase() === "r" &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
+      event.preventDefault();
+      scene?.resetView();
+    }
+    return;
+  }
   const menu = app.querySelector<HTMLDetailsElement>(".mission-menu[open]");
   if (menu && event.key === "Escape") {
     event.preventDefault();
