@@ -91,7 +91,11 @@ export class App {
     const qualityChanged = s.quality !== this.settings.quality;
     this.settings = s;
     saveSettings(s);
-    if (qualityChanged) this.stage.setQuality(s.quality);
+    if (qualityChanged) {
+      // 已降级为 2D 时无法就地重建 3D，提示刷新
+      if (this.stage.tier === 'off' && s.quality !== 'off') toast('刷新页面后启用 3D 画面（进度已自动保存）');
+      else this.stage.setQuality(s.quality);
+    }
     if (!s.sfx) setAmbience('none', s);
     if (!s.voice) stopVoice();
   }

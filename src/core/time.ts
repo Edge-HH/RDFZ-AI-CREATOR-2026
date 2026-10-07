@@ -41,6 +41,7 @@ function stepDay(s: MissionState): void {
     // 地表：能源平衡 → 生产效率
     const deficit = r.powerNeed - r.powerGen;
     const cap = storageCap(s);
+    s.storage = Math.min(s.storage, cap); // 超出电池容量的部分无法储存
     let powerRatio = 1;
     if (deficit > 0) {
       const need = deficit * 24;

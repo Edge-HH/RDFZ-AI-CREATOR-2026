@@ -164,7 +164,7 @@ export const ch4: Chapter = {
         options: [
           { id: 'shed', label: '关停科研载荷，保生命支持', detail: '用电 −6 kW；沙暴期间科研减半', effect: { flags: ['load_shed'], science: -3 },
             lines: [L('rin', '……光谱仪关了。我会用纸和笔记录。')] },
-          { id: 'plant', label: '暂停推进剂工厂，把电让给生保', detail: '储能 +300 kWh · 推进剂 −8%',
+          { id: 'plant', label: '暂停推进剂工厂，把电让给生保', detail: '储能回充（至电池上限）· 推进剂 −8%',
             effect: { storage: 300, propellant: -8 }, lines: [L('amara', '工厂停了。回家的燃料……以后再追吧。')] },
           { id: 'hold', label: '维持全部运行，赌沙暴快点过去',
             detail: '如果电力不足，系统与乘员都会受损',

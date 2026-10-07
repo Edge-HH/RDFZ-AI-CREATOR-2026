@@ -97,6 +97,12 @@ describe('时间推进', () => {
     expect(b.crew[0].dose).toBeCloseTo(126, 0);
     expect(a.o2).toBeLessThan(s.o2);
   });
+  test('缺电时储能也不会超过电池容量', async () => {
+    const { storageCap } = await import('../src/core/state');
+    const s = applyEffect(onSurface(createState(1)), { storage: 300 }); // 轻微缺电
+    const a = passTime(s, 1);
+    expect(a.storage).toBeLessThanOrEqual(storageCap(a));
+  });
   test('地表电力不足时储能下降', () => {
     const s = applyLoadout(onSurface(createState(1)), ['moxie', 'ice_drill', 'greenhouse']);
     const after = passTime(s, 3);
