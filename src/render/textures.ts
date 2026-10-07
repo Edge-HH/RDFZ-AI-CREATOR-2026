@@ -102,7 +102,7 @@ export function groundTexture(size: number, seed = 1) {
       // 用圆环坐标让噪声可平铺
       const a = (i / size) * Math.PI * 2, b = (j / size) * Math.PI * 2;
       const n = fbm3(Math.cos(a) * 2, Math.sin(a) * 2 + Math.cos(b) * 2, Math.sin(b) * 2, 5, 9);
-      const g = 0.75 + n * 0.5 + (r() - 0.5) * 0.08;
+      const g = 0.86 + n * 0.28 + (r() - 0.5) * 0.03;
       const k = (j * size + i) * 4;
       img.data[k] = Math.min(255, 180 * g); img.data[k + 1] = Math.min(255, 96 * g); img.data[k + 2] = Math.min(255, 60 * g); img.data[k + 3] = 255;
     }

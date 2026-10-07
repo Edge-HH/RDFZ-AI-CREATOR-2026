@@ -330,7 +330,6 @@ export class EdlScene implements SceneModule {
     this.chute.position.y = 14;
     this.chute.visible = false;
     this.capsule.add(shell, shield, this.plasma, this.chute);
-    this.capsule.rotation.z = Math.PI;
     // 天空：从太空黑到火星大气的橙色
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(1500, 32, 16), new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false,
@@ -348,7 +347,7 @@ export class EdlScene implements SceneModule {
     const light = new THREE.DirectionalLight('#ffe0c0', 2);
     light.position.set(10, 20, 10);
     this.scene.add(this.sky, this.capsule, this.sparks, light, new THREE.AmbientLight('#552211', 0.6));
-    this.camera.position.set(9, -4, 16);
+    this.camera.position.set(10, -6, 18);
   }
 
   apply(): void {}
@@ -366,7 +365,7 @@ export class EdlScene implements SceneModule {
     for (let i = 0; i < p.count; i++) { let y = p.getY(i) + dt * 40; if (y > 60) y = 0; p.setY(i, y); }
     p.needsUpdate = true;
     this.capsule.rotation.x = Math.sin(t * 1.3) * 0.06;
-    this.capsule.rotation.z = Math.PI + Math.sin(t * 0.9) * 0.05;
+    this.capsule.rotation.z = Math.sin(t * 0.9) * 0.05;
     this.camera.position.x = 9 + (hot ? Math.sin(t * 50) * 0.08 : 0);
     this.camera.lookAt(0, 2, 0);
   }
@@ -414,12 +413,12 @@ export class SurfaceScene implements SceneModule {
     });
     this.scene.add(new THREE.Mesh(new THREE.SphereGeometry(1800, 32, 16), this.skyMat));
     this.sun = new THREE.DirectionalLight('#fff0dc', 2.4);
-    this.sun.position.set(300, 380, -420);
+    this.sun.position.set(320, 190, -380);
     if (tier === 'high') {
       this.sun.castShadow = true;
       this.sun.shadow.mapSize.set(2048, 2048);
       const c = this.sun.shadow.camera as THREE.OrthographicCamera;
-      c.left = -80; c.right = 80; c.top = 80; c.bottom = -80; c.near = 10; c.far = 1500;
+      c.left = -110; c.right = 110; c.top = 110; c.bottom = -110; c.near = 10; c.far = 1500;
       this.sun.shadow.bias = -0.0005;
     }
     this.hemi = new THREE.HemisphereLight('#e3b48a', '#5a2c18', 0.9);
@@ -489,7 +488,7 @@ export class SurfaceScene implements SceneModule {
     };
     const pos = geo.getAttribute('position') as THREE.BufferAttribute;
     const colors = new Float32Array(pos.count * 3);
-    const lo = new THREE.Color('#7a3a1e'), hi = new THREE.Color('#c97b4a'), icey = new THREE.Color('#d8c4b4');
+    const lo = new THREE.Color('#5c3320'), hi = new THREE.Color('#b27a52'), icey = new THREE.Color('#d8c4b4');
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i), z = pos.getZ(i);
       const y = this.heightAt(x, z);
@@ -502,12 +501,58 @@ export class SurfaceScene implements SceneModule {
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geo.computeVertexNormals();
     const tex = groundTexture(this.tier === 'low' ? 128 : 256, 3);
-    tex.repeat.set(40, 40);
+    tex.repeat.set(16, 16);
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, map: tex, roughness: 0.97, metalness: 0 });
     this.terrain = new THREE.Mesh(geo, mat);
     this.terrain.receiveShadow = this.tier === 'high';
     this.scene.add(this.terrain);
     this.mav.position.y = this.heightAt(38, -30);
+    this.buildScenery(siteId);
+  }
+
+  private scenery = new THREE.Group();
+
+  // 岩石与远山：提供尺度感与纵深
+  private buildScenery(siteId: SiteId) {
+    disposeTree(this.scenery);
+    this.scenery.clear();
+    const r = mulberry(siteId.length * 131 + 7);
+    const count = this.tier === 'high' ? 700 : this.tier === 'medium' ? 420 : 200;
+    const rockGeo = new THREE.IcosahedronGeometry(1, 1);
+    const rockMat = new THREE.MeshStandardMaterial({ color: '#4a2c1e', roughness: 0.95, flatShading: true });
+    const rocks = new THREE.InstancedMesh(rockGeo, rockMat, count);
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), p = new THREE.Vector3();
+    const density = siteId === 'jezero' ? 1.6 : siteId === 'arcadia' ? 0.6 : 1;
+    let n = 0;
+    for (let i = 0; i < count; i++) {
+      const ang = r() * Math.PI * 2, dist = 28 + Math.pow(r(), 0.7) * 380;
+      const x = Math.cos(ang) * dist, z = Math.sin(ang) * dist;
+      if (r() > density * 0.75) continue;
+      const s = (0.25 + Math.pow(r(), 3) * 2.6) * (siteId === 'jezero' ? 1.3 : 1);
+      p.set(x, this.heightAt(x, z) + s * 0.25, z);
+      q.setFromEuler(e.set(r() * 3, r() * 3, r() * 3));
+      sc.set(s * (0.8 + r() * 0.6), s * (0.45 + r() * 0.4), s * (0.8 + r() * 0.6));
+      rocks.setMatrixAt(n++, m.compose(p, q, sc));
+    }
+    rocks.count = n;
+    rocks.castShadow = this.tier === 'high';
+    rocks.receiveShadow = this.tier === 'high';
+    this.scenery.add(rocks);
+    // 远山：被雾气淡化的低矮台地
+    const hillMat = new THREE.MeshStandardMaterial({ color: '#8a5634', roughness: 1, flatShading: true });
+    const hills = siteId === 'jezero' ? 18 : 10;
+    for (let i = 0; i < hills; i++) {
+      const ang = (i / hills) * Math.PI * 2 + r() * 0.4;
+      const dist = 520 + r() * 260;
+      const w = 90 + r() * 160;
+      const hgt = (siteId === 'jezero' ? 55 : 22) + r() * 30;
+      const hill = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), hillMat);
+      hill.scale.set(w, hgt, w * (0.5 + r() * 0.6));
+      hill.position.set(Math.cos(ang) * dist, -6, Math.sin(ang) * dist);
+      hill.rotation.y = r() * Math.PI;
+      this.scenery.add(hill);
+    }
+    this.scene.add(this.scenery);
   }
 
   private buildBase(s: MissionState) {
@@ -522,6 +567,26 @@ export class SurfaceScene implements SceneModule {
       return m;
     };
     const landing = this.cue === 'landing';
+    if (landing) {
+      const lander = new THREE.Group();
+      const foil = new THREE.MeshStandardMaterial({ color: '#c9a24a', metalness: 0.85, roughness: 0.35 });
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.8, 3.2, 8), foil);
+      body.position.y = 3.6;
+      const cabin = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.6, 3.4, 16), white);
+      cabin.position.y = 6.8;
+      lander.add(body, cabin);
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 5, 8), new THREE.MeshStandardMaterial({ color: '#6b6f76', metalness: 0.6 }));
+        leg.position.set(Math.cos(a) * 3.8, 1.8, Math.sin(a) * 3.8);
+        leg.rotation.set(Math.sin(a) * 0.45, 0, -Math.cos(a) * 0.45);
+        const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.8, 0.2, 12), new THREE.MeshStandardMaterial({ color: '#6b6f76' }));
+        pad.position.set(Math.cos(a) * 4.9, 0.1, Math.sin(a) * 4.9);
+        lander.add(leg, pad);
+      }
+      add(lander, 0, 0);
+      return;
+    }
     // 居住舱（两个卧式圆柱 + 连接节点）
     const hab = new THREE.Group();
     const c1 = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 12, 32), white);
@@ -629,11 +694,12 @@ export class SurfaceScene implements SceneModule {
       return;
     }
     this.mav.position.y = this.heightAt(38, -30);
-    const a = t * 0.025 + 0.6;
-    const R = this.cue === 'landing' ? 42 : 70;
+    const a = t * 0.02 + 0.6;
+    const R = this.cue === 'landing' ? 34 : 82;
     const cx = Math.sin(a) * R, cz = Math.cos(a) * R;
-    this.camera.position.set(cx, Math.max(this.heightAt(cx, cz) + 8, 12 + Math.sin(t * 0.1) * 3), cz);
-    this.camera.lookAt(0, 4, 0);
+    const lift = this.cue === 'landing' ? 6 : 24;
+    this.camera.position.set(cx, Math.max(this.heightAt(cx, cz) + 4, lift + Math.sin(t * 0.1) * 2), cz);
+    this.camera.lookAt(0, this.cue === 'landing' ? 5 : 2, 0);
   }
 
   dispose(): void { disposeTree(this.scene); }
