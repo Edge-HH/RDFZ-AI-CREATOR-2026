@@ -11,7 +11,7 @@ test('截取各场景画面', async ({ page }, info) => {
   await page.getByRole('button', { name: /开始/ }).first().click();
   const seen = new Set<string>();
   for (let i = 0; i < 600; i++) {
-    const caption = await page.evaluate(() => document.querySelector('.scene-caption b')?.textContent ?? '');
+    const caption = await page.evaluate(() => document.querySelector('.frame-cam b')?.textContent ?? '');
     if (caption && !seen.has(caption) && !(await page.locator('.overlay').isVisible())) {
       seen.add(caption);
       await page.waitForTimeout(1800);

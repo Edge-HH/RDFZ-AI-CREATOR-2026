@@ -12,27 +12,29 @@ import { clear, h, ICON, svg } from './dom';
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 function overlay(...children: HTMLElement[]): HTMLElement {
+  for (const c of children) c.classList.add('frame', 'active', 'scan-in');
   const o = h('div.overlay', { role: 'dialog', 'aria-modal': 'true' }, ...children);
   document.body.append(o);
   return o;
 }
 
-export function choiceOptions(area: HTMLElement, prompt: string, options: OptionView[], onPick: (id: string) => void): void {
-  clear(area).append(h('div.prompt', {}, svg(ICON.send), prompt));
-  for (const o of options) {
+export function choiceOptions(area: HTMLElement, options: OptionView[], onPick: (id: string) => void): void {
+  clear(area).append(h('div.code', {}, 'RESPONSE', h('span.kbd-hint', {}, ' · 按数字键选择')));
+  options.forEach((o, i) => {
     const basisBox = h('div.basis', { hidden: true }, o.basis ?? '');
-    const btn = h('button.opt', { class: o.enabled ? '' : 'locked', disabled: !o.enabled, type: 'button' },
-      h('div.t', {}, o.enabled ? null : svg(ICON.lock), o.label),
-      o.detail ? h('div.d', {}, o.detail) : null,
-      o.risk ? h('div.risk', {},
+    const btn = h('button.opt.scan-in', { class: o.enabled ? '' : 'locked', disabled: !o.enabled, type: 'button', style: `animation-delay:${i * 50}ms` },
+      h('span.n', { 'aria-hidden': 'true' }, i + 1),
+      h('span.t', {}, o.enabled ? null : svg(ICON.lock), o.label),
+      o.detail ? h('span.d', {}, o.detail) : null,
+      o.risk ? h('span.risk', {},
         `${o.risk.label}：估计 ${pct(o.risk.low)} ~ ${pct(o.risk.high)}`,
-        h('div.rbar', { title: '区间越宽，说明你手上的信息越旧、越模糊' },
+        h('span.rbar', { style: 'display:block', title: '区间越宽，说明你手上的信息越旧、越模糊' },
           h('i', { style: `left:${o.risk.low * 100}%;width:${Math.max(1.5, (o.risk.high - o.risk.low) * 100)}%` }),
           h('b', { style: `left:${o.risk.p * 100}%` }))) : null,
-      !o.enabled && o.lockedReason ? h('div.lock', {}, o.lockedReason) : null,
+      !o.enabled && o.lockedReason ? h('span.lock', {}, o.lockedReason) : null,
     );
-    btn.addEventListener('click', () => onPick(o.id));
-    const wrap = h('div', {}, btn);
+    btn.addEventListener('click', (e) => { e.stopPropagation(); onPick(o.id); });
+    const wrap = h('div.opt-wrap', {}, btn);
     if (o.basis) {
       const tog = h('button.basis-toggle', { type: 'button', 'aria-expanded': 'false' }, svg(ICON.info), '科学依据');
       tog.addEventListener('click', () => {
@@ -42,7 +44,7 @@ export function choiceOptions(area: HTMLElement, prompt: string, options: Option
       wrap.append(tog, basisBox);
     }
     area.append(wrap);
-  }
+  });
 }
 
 export function openLoadout(state: MissionState, onConfirm: (ids: string[]) => void): void {
@@ -64,7 +66,7 @@ export function openLoadout(state: MissionState, onConfirm: (ids: string[]) => v
     const s = used <= SLOT_BUDGET ? applyLoadout(state, ids) : state;
     const clear0 = rates({ ...s, site: 'utopia', dustTau: 0.5 });
     const storm = rates({ ...s, site: 'utopia', dustTau: 9 });
-    const cell = (k: string, v: string, cls = '') => h('div.card', {}, h('div.k', {}, k), h('div.v', { class: cls }, v));
+    const cell = (k: string, v: string, cls = '') => h('div.card.frame', {}, h('div.k', {}, k), h('div.v', { class: cls }, v));
     clear(preview).append(
       cell('晴天发电 / 需求（乌托邦）', `${clear0.powerGen.toFixed(1)} / ${clear0.powerNeed.toFixed(1)} kW`, clear0.powerGen >= clear0.powerNeed ? 'tag-ok' : 'tag-danger'),
       cell('全球沙尘暴时发电', `${storm.powerGen.toFixed(1)} kW`, storm.powerGen >= storm.powerNeed ? 'tag-ok' : 'tag-warn'),
@@ -92,6 +94,7 @@ export function openLoadout(state: MissionState, onConfirm: (ids: string[]) => v
 
   const o = overlay(h('div.sheet', {},
     h('div.sheet-head', {}, h('div', {},
+      h('span.code', {}, 'LOADOUT MANIFEST'),
       h('h2', {}, '配载：十二个槽位'),
       h('p', {}, '居住舱、上升器与推进剂工厂已预置在火星。你带去的东西，会一直影响到返程那一天。')),
       h('div', { style: 'text-align:right' }, meterText, meter)),
@@ -125,7 +128,7 @@ export function openSite(onConfirm: (id: SiteId) => void, onHover?: (id: SiteId)
     return { id: site.id, el: b };
   });
   const o = overlay(h('div.sheet', {},
-    h('div.sheet-head', {}, h('div', {}, h('h2', {}, '选择着陆点'), h('p', {}, '剖面来自火星轨道激光高度计（MOLA）高程的示意简化。'))),
+    h('div.sheet-head', {}, h('div', {}, h('span.code', {}, 'LANDING SITE'), h('h2', {}, '选择着陆点'), h('p', {}, '剖面来自火星轨道激光高度计（MOLA）高程的示意简化。'))),
     h('div.sites', {}, cards.map((c) => c.el)),
     h('div.sheet-foot', {}, h('span.spacer'), confirm)));
   confirm.addEventListener('click', () => { if (chosen) { o.remove(); onConfirm(chosen); } });
@@ -152,7 +155,7 @@ export function openPresets(d: Extract<Decision, { kind: 'presets' }>, onConfirm
     confirm.disabled = chosen.size !== d.pick;
   };
   const o = overlay(h('div.sheet', {},
-    h('div.sheet-head', {}, h('div', {}, h('h2', {}, d.prompt),
+    h('div.sheet-head', {}, h('div', {}, h('span.code', {}, 'CONTINGENCY RULES'), h('h2', {}, d.prompt),
       h('p', {}, '通信盲区里，地面无法干预。有预案的故障按预案处理；没有预案的，交给乘组临场判断——成功率取决于授权度与信任。')), counter),
     h('div.presets', {}, btns.map((x) => x.b)),
     h('div.sheet-foot', {}, h('span.spacer'), confirm)));
@@ -177,25 +180,27 @@ export function openAutonomy(current: number, onConfirm: (lv: number) => void): 
     return b;
   });
   const o = overlay(h('div.sheet.narrow', {},
-    h('div.sheet-head', {}, h('div', {}, h('h2', {}, '乘组授权度'), h('p', {}, '这个设定会一直生效，直到任务结束。'))),
+    h('div.sheet-head', {}, h('div', {}, h('span.code', {}, 'CREW AUTONOMY'), h('h2', {}, '乘组授权度'), h('p', {}, '这个设定会一直生效，直到任务结束。'))),
     h('div.autonomy', {}, btns),
     h('div.sheet-foot', {}, h('span.spacer'), confirm)));
   confirm.addEventListener('click', () => { o.remove(); onConfirm(chosen); });
 }
 
-// 指令上行：用“秒”演示“分钟”的光速延迟
-export function uplink(area: HTMLElement, prompt: string, delayMin: number, onSend: () => void, onArrive: () => void): void {
+// 指令上行：用“秒”演示“分钟”的光速延迟。按钮放在选项区，轨道动画在对话框正文区域播放
+export function uplink(area: HTMLElement, prompt: string, delayMin: number, show: (el: HTMLElement | null) => void, onSend: () => void, onArrive: () => void): void {
   const btn = h('button.btn.primary.block', { type: 'button' }, svg(ICON.send), prompt) as HTMLButtonElement;
-  clear(area).append(h('div.prompt', {}, svg(ICON.signal), '上行链路'), btn,
-    h('div.hint', {}, `真实往返约 ${(delayMin * 2).toFixed(0)} 分钟；这里按 1 分钟 = 0.5 秒压缩演示。`));
-  btn.addEventListener('click', () => {
+  clear(area).append(h('div.code', {}, 'UPLINK'), btn,
+    h('div.hint', { style: 'background:rgba(0,0,0,.7);padding:4px 8px' }, `真实往返约 ${(delayMin * 2).toFixed(0)} 分钟；这里按 1 分钟 = 0.5 秒压缩演示。`));
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
     onSend();
+    clear(area);
     const fast = new URLSearchParams(location.search).has('fast');
     const total = fast ? 300 : delayMin * 1000; // 往返 2×delay 分钟 × 0.5 秒/分钟
     const count = h('div.count', {}, 'T+0.0 分钟');
     const dot = h('i');
     const label = h('div.hint', {}, '指令飞向火星……');
-    clear(area).append(h('div.uplink', {}, count, h('div.track', {}, dot), h('div.ends', {}, h('span', {}, '地球 · 北京'), h('span', {}, '火星 · 中继星「烽燧」')), label));
+    show(h('div.uplink', {}, count, h('div.track', {}, dot), h('div.ends', {}, h('span', {}, '地球 · 北京'), h('span', {}, '火星 · 中继星「烽燧」')), label));
     const t0 = performance.now();
     const tick = (t: number) => {
       const e = Math.min(total, t - t0);
@@ -204,7 +209,7 @@ export function uplink(area: HTMLElement, prompt: string, delayMin: number, onSe
       dot.style.left = `calc(${f * 100}% - ${f * 18}px)`;
       count.textContent = `T+${((e / 1000) * 2).toFixed(1)} 分钟`;
       label.textContent = half ? '指令飞向火星……' : '回执正在返回地球……';
-      if (e < total) requestAnimationFrame(tick); else onArrive();
+      if (e < total) requestAnimationFrame(tick); else { show(null); onArrive(); }
     };
     requestAnimationFrame(tick);
   });

@@ -34,12 +34,31 @@ export async function step(page: Page, opts: { keepDiscovery?: boolean } = {}): 
       if (await b.isVisible()) { await b.click(); return 'acted'; }
     }
   }
-  const area = page.locator('.action-area');
+  const area = page.locator('.choices');
   const opt = area.locator('button.opt:not([disabled])').first();
   if (await opt.isVisible()) { await opt.click(); return 'acted'; }
   const send = area.getByRole('button', { name: /发送自检指令/ });
   if (await send.isVisible()) { await send.click(); return 'acted'; }
-  const cont = area.getByRole('button', { name: '继续', exact: true });
+  const cont = page.locator('.dialogue').getByRole('button', { name: '继续', exact: true });
   if (await cont.isVisible()) { await cont.click(); return 'acted'; }
   return 'idle';
+}
+
+// 一直推进，直到没有覆盖层、对话框正在等待玩家（选项或“继续”）
+export async function reachDialogue(page: Page, max = 80): Promise<void> {
+  for (let i = 0; i < max; i++) {
+    const free = !(await page.locator('.overlay').isVisible());
+    const waiting = (await page.locator('.choices button.opt').first().isVisible())
+      || (await page.locator('.dialogue').getByRole('button', { name: '继续', exact: true }).isVisible());
+    if (free && waiting) return;
+    if ((await step(page)) === 'idle') await page.waitForTimeout(60);
+  }
+  throw new Error('未能推进到对话框等待状态');
+}
+
+// 打开顶栏图标：手机端图标收在“≡”菜单里
+export async function topbarButton(page: Page, name: string) {
+  const menu = page.locator('.topbar').getByRole('button', { name: '菜单' });
+  if (await menu.isVisible()) await menu.click();
+  return page.locator('.topbar').getByRole('button', { name, exact: true });
 }

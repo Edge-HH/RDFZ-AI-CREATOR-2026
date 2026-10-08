@@ -4,7 +4,7 @@ import type { HistoryEntry, MissionState, Mode } from '../core/types';
 import { ARCHIVE, type ArchiveCard } from '../content/archive';
 import { ENDINGS } from '../content/endings';
 import { SERIES, historyChart } from './charts';
-import { h, ICON, svg } from './dom';
+import { clear, h, ICON, svg } from './dom';
 
 export const REPO_URL = 'https://github.com/Edge-HH/RDFZ-AI-CREATOR-2026';
 
@@ -20,13 +20,33 @@ const archCard = (a: ArchiveCard, cls = '') =>
   h('div.arch', { class: cls }, h('h4', {}, a.title), h('p', {}, a.body), h('div.g', {}, `游戏中：${a.game}`), h('div.s', {}, `来源：${a.source}`), linkList(a));
 import type { Settings } from './store';
 
+const fastMode = () => new URLSearchParams(location.search).has('fast') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 function overlay(cls: string, ...children: HTMLElement[]): HTMLElement {
+  for (const c of children) if (c.classList.contains('sheet')) c.classList.add('frame', 'active', 'scan-in');
   const o = h(`div.${cls}`, { role: 'dialog', 'aria-modal': 'true' }, ...children);
   document.body.append(o);
   const first = o.querySelector<HTMLElement>('button');
   first?.focus({ preventScroll: true });
   return o;
 }
+
+// 原创标志：地球 · 虚线光路 · 火星
+const LOGO = `<svg viewBox="0 0 220 44" fill="none" aria-hidden="true">
+<circle cx="14" cy="16" r="7" stroke="#e6e8ea" stroke-width="1.2"/><circle cx="14" cy="16" r="2" fill="#e6e8ea"/>
+<path d="M26 16H190" stroke="#e6e8ea" stroke-opacity=".6" stroke-dasharray="3 5"/>
+<path d="M98 12l6 4-6 4" stroke="#ff3b30" stroke-width="1.2"/>
+<circle cx="204" cy="16" r="9" fill="#e0703a" fill-opacity=".85"/><circle cx="204" cy="16" r="12.5" stroke="#ff3b30" stroke-opacity=".5"/>
+<text x="110" y="40" text-anchor="middle" fill="#7b8187" font-size="9" letter-spacing="3" font-family="ui-monospace,Consolas,monospace">11.5 LIGHT-MIN</text></svg>`;
+
+const BOOT: [string, string?][] = [
+  ['QC-01 燧火任务核心 · 量子飞控系统'],
+  ['链路自检 ………', '正常'],
+  ['深空网 · 烽燧中继 ………', '在线'],
+  ['载入任务档案：祝融一号'],
+];
+
+const bootLine = ([a, b]: [string, string?]) => h('div', {}, a, b ? h('span.ok', {}, ` ${b}`) : null);
 
 export function titleScreen(opts: { hasSave: boolean; onNew: (mode: Mode) => void; onContinue: () => void; onArchive: () => void; onRules: () => void; onSettings: () => void }): HTMLElement {
   let mode: Mode = 'standard';
@@ -35,7 +55,9 @@ export function titleScreen(opts: { hasSave: boolean; onNew: (mode: Mode) => voi
   const setMode = (m: Mode) => { mode = m; std.setAttribute('aria-pressed', String(m === 'standard')); story.setAttribute('aria-pressed', String(m === 'story')); };
   std.addEventListener('click', () => setMode('standard'));
   story.addEventListener('click', () => setMode('story'));
-  const o = overlay('title-screen', h('div.title-box', {},
+  const quick = fastMode();
+  const box = h('div.title-box', { class: quick ? '' : 'hold' },
+    h('span.logo', { html: LOGO }),
     h('h1', {}, '光速之隔'),
     h('div.en', {}, 'THE LIGHT-MINUTE GAP · 火星首航'),
     h('p.pitch', {}, '2035 年，人类第一次载人火星任务。你是地球上的飞控总师。', h('br'), '火星上的每一句话，传到你耳边都要', h('em', {}, '十几分钟'), '。', h('br'), '你看到的一切，都是过去。'),
@@ -50,30 +72,56 @@ export function titleScreen(opts: { hasSave: boolean; onNew: (mode: Mode) => voi
       h('div.mode-pick', {},
         h('button.btn.ghost', { type: 'button', onclick: opts.onSettings }, svg(ICON.gear), '设置'),
         repoLink('btn.ghost', true))),
-    h('p.foot-note', {}, '无需注册登录 · 不收集任何个人信息 · 完全离线运行', h('br'), '故事与人物为虚构；科学数据来自公开文献，详见“玩法与依据”。')));
+    h('p.foot-note', {}, '无需注册登录 · 不收集任何个人信息 · 完全离线运行', h('br'), '故事与人物为虚构；科学数据来自公开文献，详见“玩法与依据”。'));
+  const boot = h('div.boot', { 'aria-hidden': 'true' });
+  const o = overlay('title-screen', boot, box);
+  if (quick) {
+    boot.append(...BOOT.map(bootLine));
+    return o;
+  }
+  // 开机自检：约 1 秒，点击或按键跳过
+  const timers = BOOT.map((line, i) => setTimeout(() => boot.append(bootLine(line)), i * 200));
+  const reveal = () => {
+    timers.forEach(clearTimeout);
+    o.removeEventListener('pointerdown', reveal);
+    document.removeEventListener('keydown', reveal);
+    if (!box.classList.contains('hold')) return;
+    clear(boot).append(...BOOT.map(bootLine));
+    box.classList.remove('hold');
+    box.classList.add('show');
+  };
+  timers.push(setTimeout(reveal, 1000));
+  o.addEventListener('pointerdown', reveal);
+  document.addEventListener('keydown', reveal);
   return o;
 }
 
 export function chapterCard(ch: Chapter, onGo: () => void): void {
+  const name = ch.title.replace(/^.*?·\s*/, '');
+  const code = `CHAPTER ${String(ch.id).padStart(2, '0')} // ${name}`;
+  const k = h('div.k', { 'aria-label': code }, '');
+  let i = 0;
+  const t = setInterval(() => { k.textContent = code.slice(0, ++i); if (i >= code.length) clearInterval(t); }, 28);
+  if (fastMode()) { clearInterval(t); k.textContent = code; }
   const o = overlay('overlay', h('div.chapter-card', {},
-    h('div.k', {}, `CHAPTER ${ch.id}`),
-    h('h2', {}, ch.title.replace(/^.*?·\s*/, '')),
+    k,
+    h('h2', {}, name),
     h('div.sub', {}, ch.subtitle),
-    h('div.teach', {}, svg(ICON.info), ch.teach),
-    h('div', {}, h('button.btn.primary', { type: 'button', onclick: () => { o.remove(); onGo(); } }, svg(ICON.next), '开始'))));
+    h('div.teach.frame', {}, h('span.code', {}, 'NEW PROTOCOL'), svg(ICON.info), ch.teach),
+    h('div', {}, h('button.btn.primary', { type: 'button', onclick: () => { clearInterval(t); o.remove(); onGo(); } }, svg(ICON.next), '开始'))));
 }
 
 const diffCell = (label: string, a: number, b: number, unit = '', higherIsBetter = true) => {
   const d = b - a;
   const cls = Math.abs(d) < 0.5 ? '' : (d > 0) === higherIsBetter ? 'tag-ok' : 'tag-danger';
-  return h('div.card', {}, h('div.k', {}, label), h('div.v', {}, `${Math.round(b)}${unit}`), h('div.hint', { class: cls }, `${d >= 0 ? '+' : ''}${Math.round(d)}${unit}`));
+  return h('div.card.frame', {}, h('div.k', {}, label), h('div.v', {}, `${Math.round(b)}${unit}`), h('div.hint', { class: cls }, `${d >= 0 ? '+' : ''}${Math.round(d)}${unit}`));
 };
 
 export function chapterEnd(ch: Chapter, start: HistoryEntry | undefined, s: MissionState, decisions: HistoryEntry[], onNext: () => void): void {
   const now = s.history.at(-1)?.snapshot;
   const a = start?.snapshot ?? now;
   const o = overlay('overlay', h('div.sheet.narrow', {},
-    h('div.sheet-head', {}, h('div', {}, h('h2', {}, `${ch.title} · 结束`), h('p', {}, `任务第 ${s.day} 天`))),
+    h('div.sheet-head', {}, h('div', {}, h('span.code', {}, 'CHAPTER REPORT'), h('h2', {}, `${ch.title} · 结束`), h('p', {}, `任务第 ${s.day} 天`))),
     a && now ? h('div.summary-grid', {},
       diffCell('物资（最低项）', a.supplies, now.supplies, ' 天'),
       diffCell('乘员健康', a.crew, now.crew),
@@ -93,6 +141,7 @@ export function endingScreen(s: MissionState, ending: EndingId, newArchive: stri
   const avgDose = s.crew.reduce((a, c) => a + c.dose, 0) / s.crew.length;
   const o = overlay('overlay', h('div.sheet', {},
     h('div.ending-hero', { class: `tone-${e.tone}` },
+      h('div.code', { style: 'margin-bottom:10px' }, 'MISSION REPORT · 任务结算'),
       h('div.grade', { 'aria-label': `评级 ${rating.grade}` }, rating.grade),
       h('h2', {}, e.title), h('div.epi', {}, e.epigraph)),
     h('div.two-col', {},
@@ -100,8 +149,8 @@ export function endingScreen(s: MissionState, ending: EndingId, newArchive: stri
         h('div.ending-body', {}, e.body(s).map((p) => h('p', {}, p))),
         h('h4', {}, '任务报告'),
         h('div.summary-grid', {},
-          h('div.card', {}, h('div.k', {}, '综合评分'), h('div.v', {}, `${rating.score}`)),
-          ...rating.parts.map((p) => h('div.card', {}, h('div.k', {}, p.label), h('div.v', {}, `${p.value} / ${p.max}`)))),
+          h('div.card.frame', {}, h('div.k', {}, '综合评分'), h('div.v', {}, `${rating.score}`)),
+          ...rating.parts.map((p) => h('div.card.frame', {}, h('div.k', {}, p.label), h('div.v', {}, `${p.value} / ${p.max}`)))),
         h('div.hint', {}, `科研产出 ${Math.round(s.science)}（满载线 ${SCI_HIGH}）· 平均剂量 ${Math.round(avgDose)} mSv（上限 ${DOSE_LIMIT}）· 任务种子 ${s.seed}`)),
       h('div', {},
         h('h4', {}, '五维资源曲线'), chart.svg, chart.legend,
@@ -117,7 +166,7 @@ export function endingScreen(s: MissionState, ending: EndingId, newArchive: stri
 
 export function archiveScreen(unlocked: Set<string>, onClose: () => void): void {
   const o = overlay('overlay', h('div.sheet', {},
-    h('div.sheet-head', {}, h('div', {}, h('h2', {}, `知识档案集 ${ARCHIVE.filter((a) => unlocked.has(a.id)).length} / ${ARCHIVE.length}`), h('p', {}, '在任务中做出相关决策、取得科研进展即可解锁。档案会跨局保存。'))),
+    h('div.sheet-head', {}, h('div', {}, h('span.code', {}, 'ARCHIVE'), h('h2', {}, `知识档案集 ${ARCHIVE.filter((a) => unlocked.has(a.id)).length} / ${ARCHIVE.length}`), h('p', {}, '在任务中做出相关决策、取得科研进展即可解锁。档案会跨局保存。'))),
     h('div.archive-grid', {}, ARCHIVE.map((a) => unlocked.has(a.id)
       ? archCard(a)
       : h('div.arch.locked', {}, h('h4', {}, '？？？'), h('p', {}, '尚未解锁')))),
@@ -127,7 +176,7 @@ export function archiveScreen(unlocked: Set<string>, onClose: () => void): void 
 // 新知识弹窗：取得科研进展或做出相关决策时展示
 export function discoveryCard(a: ArchiveCard, index: number, total: number, onClose: () => void): void {
   const o = overlay('overlay', h('div.sheet.narrow.discovery', { 'aria-labelledby': 'disc-title' },
-    h('div.disc-k', {}, svg(ICON.book), total > 1 ? `新知识 ${index}/${total}` : '新知识'),
+    h('div.disc-k', {}, svg(ICON.book), total > 1 ? `NEW RECORD · 新知识 ${index}/${total}` : 'NEW RECORD · 新知识'),
     h('h3#disc-title', {}, a.title),
     h('p.disc-body', {}, a.body),
     h('div.g', {}, `游戏中：${a.game}`),
@@ -139,8 +188,8 @@ export function discoveryCard(a: ArchiveCard, index: number, total: number, onCl
 
 export function rulesScreen(onClose: () => void): void {
   const sec = (title: string, ...ps: (string | HTMLElement)[]) => h('section', {}, h('h4', {}, title), ...ps.map((p) => (typeof p === 'string' ? h('p', {}, p) : p)));
-  const o = overlay('overlay', h('div.sheet.narrow', {},
-    h('div.sheet-head', {}, h('div', {}, h('h2', {}, '玩法与依据'))),
+  const o = overlay('overlay', h('div.sheet.narrow.rules', {},
+    h('div.sheet-head', {}, h('div', {}, h('span.code', {}, 'PROTOCOL'), h('h2', {}, '玩法与依据'))),
     sec('你是谁', '你是北京航天飞控中心的总师，指挥 2035 年首次载人火星任务“祝融一号”。四名乘员的命运，取决于你在序章与五个章节里做出的二十多个决定。'),
     sec('五维资源', '时间（发射窗口、返程窗口、日凌）、能源（发电与储能）、物资（氧、水、食物、备件）、人员（健康、士气、信任）、安全（系统完好度与累计辐射剂量）。资源跨章延续：第一章的配载会影响到返程那一天。'),
     sec('光速之隔', '火星上的消息都标注了“火星时间 T−xx”。风险判断显示为一个区间：延迟越久、预警设备越少，区间越宽。'),
@@ -165,17 +214,18 @@ export function settingsScreen(settings: Settings, onChange: (s: Settings) => vo
     return h('div.seg', {}, btns);
   };
   const o = overlay('overlay', h('div.sheet.narrow', {},
-    h('div.sheet-head', {}, h('div', {}, h('h2', {}, '设置'))),
+    h('div.sheet-head', {}, h('div', {}, h('span.code', {}, 'SYSTEM CONFIG'), h('h2', {}, '设置'))),
     h('div.settings', {},
       h('div', {}, h('div.hint', {}, '画质（低配设备请选“低”或“关闭 3D”）'), seg('quality', [['auto', '自动'], ['high', '高'], ['medium', '中'], ['low', '低'], ['off', '关闭 3D']])),
-      h('div', {}, h('div.hint', {}, '对话速度'), seg('speed', [['slow', '慢'], ['normal', '正常'], ['fast', '快']])),
+      h('div', {}, h('div.hint', {}, '对话速度（打字与自动推进）'), seg('speed', [['slow', '慢'], ['normal', '正常'], ['fast', '快']])),
+      h('div', {}, h('div.hint', {}, '自动推进对话（也可在对话框按 A 切换）'), seg('auto', [[false, '关'], [true, '开']])),
       h('div', {}, h('div.hint', {}, '配音'), seg('voice', [[true, '开'], [false, '关']])),
       h('div', {}, h('div.hint', {}, '音效与环境音'), seg('sfx', [[true, '开'], [false, '关']]))),
     h('div.sheet-foot', {}, h('span.spacer'), h('button.btn.primary', { type: 'button', onclick: () => { o.remove(); onClose(); } }, '完成'))));
 }
 
 export function toast(text: string): void {
-  const t = h('div.toast', { role: 'status' }, text);
+  const t = h('div.toast.frame', { role: 'status' }, text);
   document.body.append(t);
   setTimeout(() => t.remove(), 3000);
 }

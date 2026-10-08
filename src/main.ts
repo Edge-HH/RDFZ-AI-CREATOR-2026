@@ -1,4 +1,8 @@
-import './ui/styles.css';
+import './ui/styles/tokens.css';
+import './ui/styles/shell.css';
+import './ui/styles/dialogue.css';
+import './ui/styles/panels.css';
+import './ui/styles/responsive.css';
 import { App } from './ui/app';
 import { createStage } from './render/stage';
 import { loadSettings } from './ui/store';

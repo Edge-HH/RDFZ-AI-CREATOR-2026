@@ -1,0 +1,99 @@
+/* 对话框、选项面板、通信记录 */
+.dialogue { position: absolute; left: 16px; right: 16px; bottom: 16px; max-width: 1180px; margin-inline: auto; min-height: 132px; max-height: 40vh; display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 16px; padding: 14px 18px 14px 14px; --panel: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px); cursor: pointer; user-select: none; }
+.dialogue.idle { cursor: default; }
+.dlg-face { position: relative; width: 84px; height: 84px; border: 1px solid var(--line-2); display: grid; place-items: center; overflow: hidden; background: rgba(230, 232, 234, 0.04); }
+.dlg-face img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(0.3) contrast(1.05); }
+.dlg-face .glyph { font-family: var(--mono); font-size: 30px; color: var(--signal); }
+.dlg-face .wave { position: absolute; left: 6px; right: 6px; bottom: 5px; height: 10px; display: flex; align-items: flex-end; gap: 2px; }
+.dlg-face .wave i { flex: 1; height: 2px; background: var(--text); opacity: 0.8; }
+.dialogue.speaking .dlg-face .wave i { animation: waveBar 0.7s ease-in-out infinite; }
+.dialogue.speaking .dlg-face .wave i:nth-child(2n) { animation-delay: 0.15s; }
+.dialogue.speaking .dlg-face .wave i:nth-child(3n) { animation-delay: 0.3s; }
+@keyframes waveBar { 0%, 100% { height: 2px; } 50% { height: 10px; } }
+.dlg-face.sys { border-color: rgba(255, 59, 48, 0.45); }
+.dlg-main { min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.dlg-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-size: 12px; color: var(--dim); padding-right: 4px; }
+.dlg-meta b { color: var(--text); font-size: 15px; font-weight: 600; letter-spacing: 0.06em; }
+.dlg-meta .cs { font-family: var(--mono); }
+.dlg-meta .ts { font-family: var(--mono); color: var(--text); }
+.dlg-meta .ts.lag { color: var(--signal); }
+.dlg-meta .spacer { flex: 1; }
+.dlg-tools { display: inline-flex; gap: 4px; align-self: center; }
+.dlg-tool { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--dim); background: transparent; border: 1px solid var(--line); border-radius: var(--radius); }
+.dlg-tool { position: relative; }
+.dlg-tool::after { content: ''; position: absolute; inset: -6px -2px; } /* 点击区域扩到 44px */
+.dlg-tool:hover { color: var(--text); border-color: var(--line-2); }
+.dlg-tool[aria-pressed='true'] { color: var(--text); border-color: var(--signal); background: var(--signal-dim); }
+.dlg-tool kbd { font: inherit; color: var(--muted); }
+.dialogue .text { margin-top: 6px; font-size: 17px; line-height: 1.7; overflow-y: auto; overflow-wrap: anywhere; min-height: 0; padding-right: 28px; scrollbar-width: thin; }
+.dialogue .text .caret { display: inline-block; width: 8px; height: 1em; margin-left: 2px; vertical-align: -0.12em; background: var(--text); animation: blink 0.8s steps(2) infinite; }
+.dialogue.kind-sys .text { font-family: var(--mono); font-size: 15px; color: var(--muted); }
+.dialogue.kind-sys.tone-alert .text { color: var(--warn); }
+.dialogue.kind-sys.tone-calm .text { color: var(--text); }
+.dialogue.kind-you .text { color: var(--text); }
+.dialogue.kind-prompt .text { color: var(--text); font-weight: 600; }
+.dialogue.tone-alert:not(.kind-sys) .text { color: #ffd2b0; }
+.dialogue.tone-cold .text { color: #c3c8ce; font-style: italic; }
+.dialogue.tone-warm .text { color: #f3e3d2; }
+.dialogue.alert-flash { animation: alertFlash 0.9s steps(6, end); }
+@keyframes alertFlash { 0%, 33%, 66% { border-color: var(--signal); box-shadow: 0 0 0 1px var(--signal), 0 0 24px rgba(255, 59, 48, 0.35); } 16%, 50%, 100% { box-shadow: none; } }
+.dlg-recv { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; color: var(--muted); margin-top: 8px; }
+.dlg-recv .bars { display: inline-flex; gap: 2px; align-items: flex-end; height: 14px; }
+.dlg-recv .bars i { width: 3px; background: var(--signal); animation: waveBar 0.5s ease-in-out infinite; }
+.dlg-recv .bars i:nth-child(2) { animation-delay: 0.1s; } .dlg-recv .bars i:nth-child(3) { animation-delay: 0.2s; } .dlg-recv .bars i:nth-child(4) { animation-delay: 0.3s; }
+.dlg-up { margin-top: 8px; height: 2px; background: var(--line); position: relative; overflow: hidden; max-width: 360px; }
+.dlg-up i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--text); animation: upFill 0.8s ease-out forwards; }
+@keyframes upFill { to { width: 100%; } }
+.dlg-next { position: absolute; right: 14px; bottom: 10px; }
+.dlg-next .tri { display: block; color: var(--signal); font-size: 13px; animation: blink 1s steps(2) infinite; }
+.dlg-next .btn { min-height: 40px; padding: 6px 16px; }
+
+/* 上行链路动画（在对话框正文区域内） */
+.uplink { display: grid; gap: 8px; padding: 6px 0 2px; }
+.uplink .count { font-family: var(--mono); font-size: 26px; color: var(--text); letter-spacing: 0.06em; }
+.uplink .track { width: 100%; height: 2px; background: var(--line-2); position: relative; }
+.uplink .track i { position: absolute; top: -3px; width: 18px; height: 8px; background: var(--signal); box-shadow: 0 0 12px var(--signal); }
+.uplink .ends { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--dim); letter-spacing: 0.06em; }
+
+/* ---------- 选项面板 ---------- */
+.choices { position: absolute; right: max(16px, calc((100% - 1180px) / 2)); bottom: calc(var(--dlg-h) + 28px); width: min(560px, calc(100% - 32px)); max-height: calc(100% - var(--dlg-h) - var(--top-h) - 80px); overflow-y: auto; display: flex; flex-direction: column; gap: 6px; scrollbar-width: thin; padding: 2px; }
+.choices:empty { display: none; }
+.choices .code { padding: 0 2px 2px; }
+.opt { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 4px 10px; width: 100%; text-align: left; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--line); background: rgba(0, 0, 0, 0.8); transition: border-color 0.12s, background 0.12s; }
+.opt:hover:not(:disabled), .opt:focus-visible { border-color: var(--signal); background: rgba(40, 6, 4, 0.85); }
+.opt .n { grid-row: 1 / span 3; font-family: var(--mono); font-size: 13px; color: var(--signal); border: 1px solid rgba(255, 59, 48, 0.5); height: 24px; display: grid; place-items: center; }
+.opt .t { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.opt .d { font-size: 13px; color: var(--muted); }
+.opt.locked { opacity: 0.5; }
+.opt.locked .n { color: var(--dim); border-color: var(--line); }
+.opt .lock { color: var(--warn); font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.risk { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.risk .rbar { position: relative; height: 6px; background: rgba(220, 224, 230, 0.1); margin-top: 4px; }
+.risk .rbar i { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(90deg, rgba(255, 59, 48, 0.75) 0 3px, rgba(255, 59, 48, 0.35) 3px 5px); }
+.risk .rbar b { position: absolute; top: -3px; bottom: -3px; width: 1px; background: #fff; opacity: 0.7; }
+.opt-wrap { display: flex; flex-direction: column; }
+.basis-toggle { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); background: rgba(0, 0, 0, 0.6); border: none; padding: 2px 8px; min-height: 28px; }
+.basis-toggle:hover { color: var(--text); }
+.basis { font-size: 12px; color: var(--muted); border-left: 1px solid var(--signal); padding: 6px 10px; background: rgba(0, 0, 0, 0.8); }
+.choices > .btn { background: rgba(0, 0, 0, 0.8); }
+
+/* ---------- 通信记录（沿用频道消息样式） ---------- */
+.feed { display: flex; flex-direction: column; gap: 12px; padding: 4px 2px 8px; }
+.msg { display: grid; grid-template-columns: 34px 1fr; gap: 10px; }
+.msg .body { min-width: 0; }
+.msg .meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: 12px; color: var(--dim); }
+.msg .meta b { color: var(--text); font-size: 13px; font-weight: 600; }
+.msg .meta .ts { font-family: var(--mono); color: var(--muted); }
+.msg .text { margin-top: 2px; font-size: 15px; overflow-wrap: anywhere; }
+.msg.sys { grid-template-columns: 1fr; }
+.msg.sys .text { font-family: var(--mono); font-size: 13px; color: var(--muted); border-left: 1px solid var(--line-2); padding-left: 10px; }
+.msg.sys.alert .text { color: var(--warn); border-color: var(--warn); }
+.msg.sys.calm .text { color: var(--text); }
+.msg.you .text { color: var(--text); }
+.msg.you .meta b::before { content: '▲ '; color: var(--signal); font-size: 10px; }
+.msg.prompt .text { font-weight: 600; }
+.msg.tone-alert .text { color: #ffd2b0; }
+.msg.tone-cold .text { color: #c3c8ce; font-style: italic; }
+.msg.tone-warm .text { color: #f3e3d2; }
+.msg.divider { grid-template-columns: 1fr; text-align: center; font-family: var(--mono); font-size: 11px; color: var(--dim); letter-spacing: 0.16em; padding: 4px 0; border-top: 1px solid var(--line); }
+.backlog .feed { max-height: none; }

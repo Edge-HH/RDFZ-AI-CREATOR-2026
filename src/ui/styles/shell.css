@@ -1,0 +1,93 @@
+/* 外壳：全屏 3D、取景框、状态条、遥测抽屉 */
+#app { position: fixed; inset: 0; }
+#scene { position: absolute; inset: 0; z-index: var(--z-scene); }
+#scene canvas { display: block; width: 100%; height: 100%; }
+.scene-fallback { position: absolute; inset: 0; background: radial-gradient(ellipse at 55% 38%, #2a120a 0%, #0c0605 42%, #000 78%); }
+.scene-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%); z-index: 1; }
+
+.layout { position: absolute; inset: 0; z-index: var(--z-ui); pointer-events: none; }
+.layout > * { pointer-events: auto; }
+.layout.off, .scene-fx.off .frame-cam, .scene-fx.off .frame-tc { visibility: hidden; }
+
+/* ---------- 取景框叠层 ---------- */
+.scene-fx { position: absolute; inset: 0; z-index: var(--z-fx); pointer-events: none; overflow: hidden; }
+.scanlines { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px); mix-blend-mode: screen; }
+.fx-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%); }
+.fx-corner { position: absolute; width: 22px; height: 22px; border: 0 solid var(--line-2); }
+.fx-corner.tl { left: 12px; top: calc(var(--top-h) + 10px); border-width: 1px 0 0 1px; }
+.fx-corner.tr { right: 12px; top: calc(var(--top-h) + 10px); border-width: 1px 1px 0 0; }
+.fx-corner.bl { left: 12px; bottom: 12px; border-width: 0 0 1px 1px; }
+.fx-corner.br { right: 12px; bottom: 12px; border-width: 0 1px 1px 0; }
+.fx-cross { position: absolute; left: 50%; top: 46%; width: 28px; height: 28px; margin: -14px 0 0 -14px; opacity: 0.35; }
+.fx-cross::before, .fx-cross::after { content: ''; position: absolute; background: var(--line-2); }
+.fx-cross::before { left: 13px; top: 0; width: 1px; height: 28px; }
+.fx-cross::after { top: 13px; left: 0; height: 1px; width: 28px; }
+.frame-cam { position: absolute; left: 30px; top: calc(var(--top-h) + 22px); font-family: var(--mono); font-size: 11px; line-height: 1.6; color: var(--muted); letter-spacing: 0.06em; text-shadow: 0 1px 2px #000; max-width: min(520px, 60%); }
+.frame-cam b { display: block; color: var(--text); font-family: var(--font); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; }
+.frame-cam .seg { color: var(--signal); }
+.frame-tc { position: absolute; right: 30px; top: calc(var(--top-h) + 22px); font-family: var(--mono); font-size: 11px; line-height: 1.6; color: var(--muted); text-align: right; text-shadow: 0 1px 2px #000; }
+.frame-tc .sig { letter-spacing: 0.1em; color: var(--text); }
+.frame-tc .sig.lost { color: var(--signal); animation: pulse 1s infinite; }
+/* 信号重建转场：错位亮条 + 闪烁 */
+.fx-glitch { position: absolute; inset: 0; opacity: 0; }
+.fx-glitch i { position: absolute; left: 0; right: 0; background: rgba(230, 232, 234, 0.16); mix-blend-mode: screen; }
+.fx-glitch.run { animation: glitchFlash 0.42s steps(6, end) both; }
+.fx-glitch.run i { animation: glitchBand 0.42s steps(5, end) both; }
+@keyframes glitchFlash { 0% { opacity: 1; background: rgba(0, 0, 0, 0.6); } 30% { opacity: 1; background: rgba(230, 232, 234, 0.06); } 60% { opacity: 1; background: rgba(0, 0, 0, 0.35); } 100% { opacity: 0; } }
+@keyframes glitchBand { 0% { transform: translateX(-6%); } 40% { transform: translateX(4%); } 70% { transform: translateX(-2%); } 100% { transform: translateX(0); } }
+
+/* ---------- 顶部状态条 ---------- */
+.topbar { position: absolute; left: 0; right: 0; top: 0; min-height: var(--top-h); display: flex; align-items: center; gap: 16px; padding: 0 12px 0 16px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.6)); backdrop-filter: blur(6px); }
+.topbar .brand { white-space: nowrap; font-weight: 600; letter-spacing: 0.24em; font-size: 14px; }
+.topbar .brand .code { margin-left: 6px; letter-spacing: 0.12em; }
+.topbar .chapter { color: var(--signal); font-weight: 600; font-size: 13px; letter-spacing: 0.08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+.gauges { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; background: none; border: 0; padding: 4px 0; text-align: left; }
+.gauge { min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 4px 0; }
+.gauge .g-top { display: flex; align-items: baseline; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--dim); white-space: nowrap; overflow: hidden; }
+.gauge .g-top b { color: var(--text); font-weight: 600; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.gauge .g-top .d { margin-left: auto; font-size: 11px; }
+.gauge .g-top .d.down { color: var(--signal); }
+.gauge .g-top .d.up { color: var(--text); }
+.gauge .bar { margin: 0; height: 3px; }
+.gauge.warn .g-top b { color: var(--warn); }
+.gauge.danger .g-top b { color: var(--signal); }
+.gauge.flash { animation: gaugeFlash 1.2s steps(6, end); }
+@keyframes gaugeFlash { 0%, 33%, 66% { background: var(--signal-dim); } 16%, 50%, 100% { background: transparent; } }
+.gauges:hover .gauge .g-top { color: var(--muted); }
+.delay-read { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.delay-read strong { color: var(--text); font-weight: 600; }
+.delay-read .live { width: 7px; height: 7px; border-radius: 50%; background: var(--text); box-shadow: 0 0 8px rgba(230, 232, 234, 0.8); animation: pulse 2s infinite; }
+.delay-read.blackout strong { color: var(--signal); }
+.delay-read.blackout .live { background: var(--signal); box-shadow: 0 0 8px var(--signal); }
+.tb-icons { display: flex; align-items: center; gap: 2px; }
+.tb-icons .icon-btn .lbl { display: none; }
+.tb-menu { display: none; }
+
+/* ---------- 遥测抽屉 ---------- */
+.drawer-scrim { position: fixed; inset: 0; z-index: var(--z-drawer); background: rgba(0, 0, 0, 0.35); opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.drawer-scrim.open { opacity: 1; pointer-events: auto; }
+.drawer { position: fixed; left: 0; top: var(--top-h); bottom: 0; width: 340px; z-index: calc(var(--z-drawer) + 1); display: flex; flex-direction: column; background: var(--panel-2); border-right: 1px solid var(--line-2); transform: translateX(-102%); transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.24s; visibility: hidden; }
+.drawer.open { transform: none; visibility: visible; transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s; }
+.drawer-head { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--line); }
+.drawer-head h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 0.16em; }
+.drawer-head .spacer { flex: 1; }
+.hud { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; scrollbar-width: thin; }
+.card { padding: 10px 12px; }
+.card h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.14em; }
+.card h3 .ico { color: var(--signal); }
+.stat-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; padding: 2px 0; }
+.stat-row span:first-child { color: var(--muted); }
+.stat-row .num { font-size: 14px; }
+.delta { font-family: var(--mono); font-size: 11px; margin-left: 6px; }
+.delta.up { color: var(--text); }
+.delta.down { color: var(--signal); }
+.crew-list { display: grid; gap: 8px; }
+.crew-item { display: grid; grid-template-columns: 34px 1fr; gap: 8px; align-items: center; }
+.crew-item .who { display: flex; justify-content: space-between; font-size: 13px; }
+.crew-item .who b { font-weight: 600; }
+.crew-item .mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 11px; color: var(--dim); }
+.crew-item .mini .bar { height: 3px; margin: 2px 0 0; }
+.crew-item.lost { opacity: 0.45; }
+.crew-item.stayed .who b::after { content: ' · 留守'; color: var(--muted); font-weight: 400; }
+.portrait { width: 34px; height: 34px; display: block; object-fit: cover; border: 1px solid var(--line); border-radius: var(--radius); filter: grayscale(0.35) contrast(1.05); }
+.portrait.lg { width: 44px; height: 44px; }

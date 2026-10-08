@@ -1,0 +1,51 @@
+/* 响应式：桌面中等宽度与手机竖屏 */
+@media (max-width: 1180px) {
+  .topbar .brand .code { display: none; }
+  .gauges { gap: 10px; }
+}
+
+@media (max-width: 900px) {
+  .topbar { flex-wrap: wrap; gap: 0 10px; padding: 4px 4px 6px 12px; }
+  .topbar .brand { display: none; }
+  .topbar .chapter { flex: 1; max-width: none; }
+  .gauges { order: 3; flex-basis: 100%; gap: 8px; padding: 0 8px 0 0; min-height: 40px; }
+  .gauge .g-top { font-size: 10px; gap: 4px; }
+  .gauge .g-top b { font-size: 11px; }
+  .gauge .g-top .d { display: none; }
+  .tb-menu { display: inline-flex; }
+  .tb-icons { display: none; position: absolute; right: 6px; top: calc(100% + 4px); flex-direction: column; align-items: stretch; gap: 2px; padding: 6px; min-width: 200px; z-index: 5; background: var(--panel-solid); border: 1px solid var(--line-2); }
+  .tb-icons.open { display: flex; }
+  .tb-icons .icon-btn { justify-content: flex-start; padding: 0 12px; color: var(--text); }
+  .tb-icons .icon-btn .lbl { display: inline; }
+
+  .fx-corner.tl, .fx-corner.tr { top: calc(var(--top-h) + 6px); }
+  .fx-corner { width: 14px; height: 14px; }
+  .fx-corner.tl, .fx-corner.bl { left: 6px; } .fx-corner.tr, .fx-corner.br { right: 6px; }
+  .fx-corner.bl, .fx-corner.br { bottom: 6px; }
+  .frame-tc, .fx-cross { display: none; }
+  .frame-cam { left: 16px; top: calc(var(--top-h) + 14px); font-size: 10px; max-width: 80%; }
+  .frame-cam b { font-size: 12px; }
+
+  .dialogue { left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); grid-template-columns: 52px minmax(0, 1fr); gap: 10px; padding: 10px 10px 10px 10px; min-height: 120px; max-height: 44dvh; }
+  .dlg-face { width: 52px; height: 52px; }
+  .dlg-face .glyph { font-size: 22px; }
+  .dlg-meta { gap: 2px 8px; }
+  .dlg-meta b { font-size: 14px; }
+  .dlg-meta .role { display: none; }
+  .dlg-tool { min-height: 30px; padding: 0 8px; }
+  .dlg-tool kbd, .kbd-hint { display: none; }
+  .dialogue .text { font-size: 16px; line-height: 1.65; padding-right: 20px; }
+  .choices { left: 8px; right: 8px; width: auto; bottom: calc(var(--dlg-h) + 16px + env(safe-area-inset-bottom)); max-height: min(50dvh, calc(100% - var(--dlg-h) - var(--top-h) - 40px)); }
+
+  .drawer { width: 100%; border-right: 0; }
+  .two-col { grid-template-columns: 1fr; }
+  .sheet { padding: 16px; }
+  .sheet-foot { bottom: -16px; }
+  .title-screen { align-content: center; gap: 14px; }
+  .boot { position: static; justify-self: stretch; font-size: 11px; }
+}
+
+@media (max-width: 420px) {
+  .mode-pick { grid-template-columns: 1fr; }
+  .crew-list { grid-template-columns: 1fr; }
+}

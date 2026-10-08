@@ -11,8 +11,8 @@ import { portrait } from './portraits';
 type Prev = Record<string, number>;
 
 const fmt = (v: number, d = 0) => v.toFixed(d);
-const level = (v: number, warn: number, danger: number, higherIsBetter = true) =>
-  higherIsBetter ? (v <= danger ? 'danger' : v <= warn ? 'warn' : 'ok') : v >= danger ? 'danger' : v >= warn ? 'warn' : 'ok';
+export const level = (v: number, warn: number, danger: number, higherIsBetter = true) =>
+  (higherIsBetter ? (v <= danger ? 'danger' : v <= warn ? 'warn' : 'ok') : v >= danger ? 'danger' : v >= warn ? 'warn' : 'ok') as 'ok' | 'warn' | 'danger';
 
 function bar(pct: number, cls = '', mark?: number) {
   const b = h('div.bar', { class: cls, role: 'presentation' }, h('i', { style: `width:${Math.max(0, Math.min(100, pct))}%` }));
@@ -36,6 +36,8 @@ export class Hud {
   private prev: Prev | null = null;
   constructor(public root: HTMLElement) {}
 
+  reset(): void { this.prev = null; }
+
   private delta(key: string, now: number, digits = 0, higherIsBetter = true) {
     const before = this.prev?.[key];
     if (before === undefined) return null;
@@ -54,7 +56,7 @@ export class Hud {
     const site = siteById(s.site);
     const now: Prev = { o2: s.o2, water: s.water, food: s.food, integrity: s.integrity, dose: avgDose, science: s.science, propellant: s.propellant, spares: s.spares };
 
-    const time = h('section.card', { 'aria-label': '时间' },
+    const time = h('section.card.frame', { 'aria-label': '时间' },
       h('h3', {}, svg(ICON.clock), '时间'),
       h('div.stat-row', {}, h('span', {}, '任务日'), h('span.num', {}, s.day < 0 ? `T${s.day}` : `第 ${s.day} 天`)),
       phase === 'surface' ? h('div.stat-row', {}, h('span', {}, '火星日'), h('span.num', {}, `Sol ${solOf(s.day)}`)) : null,
@@ -65,7 +67,7 @@ export class Hud {
       h('div.hint', {}, milestone(s)),
     );
 
-    const energy = h('section.card', { 'aria-label': '能源' },
+    const energy = h('section.card.frame', { 'aria-label': '能源' },
       h('h3', {}, svg(ICON.bolt), '能源'),
       phase === 'surface'
         ? [
@@ -84,7 +86,7 @@ export class Hud {
       h('div.stat-row', {}, h('span', {}, name), h('span', {}, h('span.num', {}, `${Math.round(s[key])} 天`), this.delta(key, s[key]))),
       bar((s[key] / 600) * 100, level(s[key], 120, 40)),
     ];
-    const supplies = h('section.card', { 'aria-label': '物资' },
+    const supplies = h('section.card.frame', { 'aria-label': '物资' },
       h('h3', {}, svg(ICON.box), '物资'),
       supRow('氧气', 'o2'), supRow('水', 'water'), supRow('食物', 'food'),
       h('div.stat-row', {}, h('span', {}, '关键备件'), h('span', {}, h('span.num', {}, `${s.spares} 份`), this.delta('spares', s.spares))),
@@ -107,7 +109,7 @@ export class Hud {
       ))),
     );
 
-    const safety = h('section.card', { 'aria-label': '安全' },
+    const safety = h('section.card.frame', { 'aria-label': '安全' },
       h('h3', {}, svg(ICON.shield), '安全'),
       h('div.stat-row', {}, h('span', {}, '系统完好度'), h('span', {}, h('span.num', {}, `${Math.round(s.integrity)}%`), this.delta('integrity', s.integrity))),
       bar(s.integrity, level(s.integrity, 60, 30)),
@@ -116,7 +118,7 @@ export class Hud {
       h('div.hint', {}, `红线：任务剂量上限 ${DOSE_LIMIT} mSv`),
     );
 
-    const output = h('section.card', { 'aria-label': '任务产出' },
+    const output = h('section.card.frame', { 'aria-label': '任务产出' },
       h('h3', {}, svg(ICON.flask), '任务产出'),
       h('div.stat-row', {}, h('span', {}, '科研产出'), h('span', {}, h('span.num', {}, fmt(s.science)), this.delta('science', s.science))),
       h('div.stat-row', {}, h('span', {}, '上升器推进剂'), h('span', {}, h('span.num', {}, `${Math.round(s.propellant)}%`), this.delta('propellant', s.propellant))),
@@ -128,4 +130,48 @@ export class Hud {
     clear(this.root).append(time, energy, supplies, crewCard, safety, output);
     this.prev = now;
   }
+}
+
+// 遥测抽屉：从左侧滑出，按 T、Esc 或点击遮罩关闭
+export class Drawer {
+  readonly el: HTMLElement;
+  readonly scrim: HTMLElement;
+  private hud: Hud;
+  private closeBtn: HTMLElement;
+  private prevFocus: HTMLElement | null = null;
+
+  constructor() {
+    const hudEl = h('div.hud');
+    this.hud = new Hud(hudEl);
+    this.closeBtn = h('button.icon-btn', { type: 'button', 'aria-label': '关闭遥测面板', onclick: () => this.close() }, svg(ICON.close));
+    this.el = h('aside.drawer', { role: 'dialog', 'aria-modal': 'true', 'aria-label': '遥测面板', 'aria-hidden': 'true' },
+      h('div.drawer-head', {}, h('div', {}, h('span.code', {}, 'TELEMETRY'), h('h2', {}, '任务遥测')), h('span.spacer'), h('span.hint', {}, 'T / Esc'), this.closeBtn),
+      hudEl);
+    this.scrim = h('div.drawer-scrim', { 'aria-hidden': 'true', onclick: () => this.close() });
+  }
+
+  get isOpen(): boolean { return this.el.classList.contains('open'); }
+
+  open(): void {
+    if (this.isOpen) return;
+    this.prevFocus = document.activeElement as HTMLElement | null;
+    this.el.classList.add('open');
+    this.scrim.classList.add('open');
+    this.el.setAttribute('aria-hidden', 'false');
+    this.closeBtn.focus({ preventScroll: true });
+  }
+
+  close(): void {
+    if (!this.isOpen) return;
+    this.el.classList.remove('open');
+    this.scrim.classList.remove('open');
+    this.el.setAttribute('aria-hidden', 'true');
+    this.prevFocus?.focus?.({ preventScroll: true });
+  }
+
+  toggle(): void { if (this.isOpen) this.close(); else this.open(); }
+
+  render(s: MissionState): void { this.hud.render(s); }
+
+  reset(): void { this.hud.reset(); }
 }
