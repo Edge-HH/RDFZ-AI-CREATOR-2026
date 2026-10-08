@@ -89,5 +89,5 @@
 .crew-item .mini .bar { height: 3px; margin: 2px 0 0; }
 .crew-item.lost { opacity: 0.45; }
 .crew-item.stayed .who b::after { content: ' · 留守'; color: var(--muted); font-weight: 400; }
-.portrait { width: 34px; height: 34px; display: block; object-fit: cover; border: 1px solid var(--line); border-radius: var(--radius); filter: grayscale(0.35) contrast(1.05); }
+.portrait { width: 34px; height: 34px; display: block; object-fit: cover; border: 1px solid var(--line); border-radius: var(--radius); image-rendering: pixelated; }
 .portrait.lg { width: 44px; height: 44px; }

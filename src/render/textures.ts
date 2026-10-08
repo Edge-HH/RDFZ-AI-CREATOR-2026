@@ -67,26 +67,37 @@ export function earthTexture(width: number) {
   });
 }
 
+// 云层：域扭曲 fBm，纬向拉伸成气旋带。计算量大，分块异步填充，不阻塞首帧
 export function cloudTexture(width: number) {
   const height = width / 2;
   const canvas = document.createElement('canvas');
   canvas.width = width; canvas.height = height;
   const ctx = canvas.getContext('2d')!;
-  const img = ctx.createImageData(width, height);
-  for (let j = 0; j < height; j++) {
-    const lat = (0.5 - j / height) * Math.PI;
-    for (let i = 0; i < width; i++) {
-      const lon = (i / width) * Math.PI * 2;
-      const x = Math.cos(lat) * Math.cos(lon), y = Math.sin(lat), z = Math.cos(lat) * Math.sin(lon);
-      const n = fbm3(x * 3 + 5, y * 6, z * 3, 5, 41);
-      const a = smooth(0.52, 0.72, n) * 255;
-      const k = (j * width + i) * 4;
-      img.data[k] = 255; img.data[k + 1] = 255; img.data[k + 2] = 255; img.data[k + 3] = a;
-    }
-  }
-  ctx.putImageData(img, 0, 0);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
+  const CH = 16;
+  const fill = (j0: number) => {
+    const img = ctx.createImageData(width, CH);
+    for (let jj = 0; jj < CH && j0 + jj < height; jj++) {
+      const j = j0 + jj;
+      const lat = (0.5 - j / height) * Math.PI;
+      const band = 0.55 + 0.45 * Math.abs(Math.sin(lat * 3)); // 赤道辐合带与西风带更多云
+      for (let i = 0; i < width; i++) {
+        const lon = (i / width) * Math.PI * 2;
+        const x = Math.cos(lat) * Math.cos(lon), y = Math.sin(lat), z = Math.cos(lat) * Math.sin(lon);
+        const wx = fbm3(x * 2 + 1, y * 2, z * 2, 2, 61) - 0.5, wz = fbm3(x * 2, y * 2 + 3, z * 2, 2, 62) - 0.5;
+        const n = fbm3(x * 4 + wx * 2.2, y * 9, z * 4 + wz * 2.2, 5, 41);
+        const fine = fbm3(x * 22, y * 30, z * 22, 2, 43);
+        const k = (jj * width + i) * 4;
+        img.data[k] = img.data[k + 1] = img.data[k + 2] = 255;
+        img.data[k + 3] = smooth(0.5, 0.74, n * band + fine * 0.12) * 235;
+      }
+    }
+    ctx.putImageData(img, 0, j0);
+    tex.needsUpdate = true;
+    if (j0 + CH < height) setTimeout(() => fill(j0 + CH), 0);
+  };
+  fill(0);
   return tex;
 }
 
@@ -145,4 +156,98 @@ export function glowSprite(color: string, size = 128): THREE.Texture {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
+}
+
+const canvasTex = (size: number, draw: (ctx: CanvasRenderingContext2D, size: number) => void, srgb = true, w = size) => {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = size;
+  draw(c.getContext('2d')!, size);
+  const t = new THREE.CanvasTexture(c);
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+};
+
+// 太阳能电池片：深蓝单元格 + 银色栅线
+export function solarCellTexture(cells = 8): THREE.Texture {
+  return canvasTex(256, (ctx, S) => {
+    ctx.fillStyle = '#c9ccd2';
+    ctx.fillRect(0, 0, S, S);
+    const cs = S / cells;
+    const r = mulberry(17);
+    for (let i = 0; i < cells; i++) for (let j = 0; j < cells; j++) {
+      const v = 18 + r() * 10;
+      ctx.fillStyle = `rgb(${v},${v + 24},${v + 70})`;
+      ctx.fillRect(i * cs + 2, j * cs + 2, cs - 4, cs - 4);
+      ctx.fillStyle = 'rgba(200,210,230,0.18)';
+      for (let k = 1; k < 4; k++) ctx.fillRect(i * cs + 2, j * cs + (k * cs) / 4, cs - 4, 1);
+    }
+  });
+}
+
+// 白色复合材料面板：细网格 + 轻微脏污
+export function panelTexture(div = 6, base = '#e9ebee'): THREE.Texture {
+  return canvasTex(256, (ctx, S) => {
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, S, S);
+    const r = mulberry(29);
+    for (let i = 0; i < 400; i++) { ctx.fillStyle = `rgba(80,70,60,${r() * 0.04})`; ctx.fillRect(r() * S, r() * S, 2 + r() * 14, 2 + r() * 14); }
+    ctx.strokeStyle = 'rgba(60,60,70,0.35)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i <= div; i++) {
+      const p = (i / div) * S;
+      ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, S); ctx.moveTo(0, p); ctx.lineTo(S, p); ctx.stroke();
+    }
+  });
+}
+
+// 法线贴图：由可平铺的噪声高度场求梯度（隔热毯褶皱、岩石、地面细节）
+export function noiseNormal(size: number, scale: number, strength: number, seed = 5): THREE.Texture {
+  const hgt = new Float32Array(size * size);
+  for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) {
+    const a = (i / size) * Math.PI * 2, b = (j / size) * Math.PI * 2;
+    hgt[j * size + i] = ridged3(Math.cos(a) * scale, Math.sin(a) * scale + Math.cos(b) * scale, Math.sin(b) * scale, 4, seed);
+  }
+  return canvasTex(size, (ctx, S) => {
+    const img = ctx.createImageData(S, S);
+    for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
+      const h = (x: number, y: number) => hgt[((y + S) % S) * S + ((x + S) % S)];
+      const dx = (h(i + 1, j) - h(i - 1, j)) * strength, dy = (h(i, j + 1) - h(i, j - 1)) * strength;
+      const len = Math.hypot(dx, dy, 1);
+      const k = (j * S + i) * 4;
+      img.data[k] = (-dx / len * 0.5 + 0.5) * 255; img.data[k + 1] = (-dy / len * 0.5 + 0.5) * 255; img.data[k + 2] = (1 / len * 0.5 + 0.5) * 255; img.data[k + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+  }, false);
+}
+
+// 软烟团/尘团（带噪声边缘的透明贴图）
+export function puffTexture(seed = 7): THREE.Texture {
+  return canvasTex(128, (ctx, S) => {
+    const img = ctx.createImageData(S, S);
+    for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
+      const dx = i / S - 0.5, dy = j / S - 0.5, d = Math.hypot(dx, dy) * 2;
+      const n = fbm3(i / 22, j / 22, seed, 4, seed);
+      const a = Math.max(0, 1 - d * (0.8 + n * 0.6)) ** 1.6;
+      const k = (j * S + i) * 4;
+      img.data[k] = img.data[k + 1] = img.data[k + 2] = 255; img.data[k + 3] = a * 255;
+    }
+    ctx.putImageData(img, 0, 0);
+  });
+}
+
+// 沙尘墙：横向可平铺的噪声云带
+export function dustWallTexture(): THREE.Texture {
+  return canvasTex(256, (ctx, S) => {
+    const W = S * 2;
+    const img = ctx.createImageData(W, S);
+    for (let j = 0; j < S; j++) for (let i = 0; i < W; i++) {
+      const a = (i / W) * Math.PI * 2;
+      const n = fbm3(Math.cos(a) * 3, j / 40, Math.sin(a) * 3, 5, 71);
+      const v = smooth(0.0, 0.35, j / S) * (1 - smooth(0.7, 1, j / S) * 0.4);
+      const k = (j * W + i) * 4;
+      img.data[k] = img.data[k + 1] = img.data[k + 2] = 255; img.data[k + 3] = Math.min(255, smooth(0.3, 0.75, n) * v * 255);
+    }
+    ctx.putImageData(img, 0, 0);
+  }, true, 512);
 }

@@ -110,7 +110,7 @@ tests/ e2e/    单元测试与端到端测试
 ## AI 使用说明
 
 - **策划与开发**：游戏策划（经多轮问答敲定）、剧本、数值模型、代码和测试都在 AI 编程助手 Claude Code 的协助下完成。作者负责全部决策，并逐项审核科学数据。
-- **美术**：行星、地形和天空全部由代码程序化生成，不使用外部图片素材。角色头像目前是程序绘制的徽章；AI 写实头像的提示词见 [docs/PROMPTS.md](docs/PROMPTS.md)，生成后放进 `src/assets/portraits/` 即可自动替换。
+- **美术**：火星与地球表面使用 NASA 公有领域影像：火星为 NASA 3D Resources 的 Mars 贴图（NASA/JPL-Caltech，Viking 影像经 USGS 处理），地球为 NASA Earth Observatory 的 Blue Marble: Next Generation（2004 年 12 月，地形与海底地形版，无国界与地名）。两张贴图由 `scripts/prep-textures.py` 缩放后内联进离线包。云层、地形、天空、航天器与基地模型全部由代码程序化生成。角色头像目前是程序绘制的徽章；AI 写实头像的提示词见 [docs/PROMPTS.md](docs/PROMPTS.md)，生成后放进 `src/assets/portraits/` 即可自动替换。
 - **配音（可选）**：关键台词清单见 [docs/voice-lines.json](docs/voice-lines.json)。音频放进 `public/voice/<编号>.mp3` 即可启用；文件缺失时游戏照常运行。
 - **音效**：全部由 WebAudio 实时合成，没有版权风险。
 

@@ -1,7 +1,7 @@
 import type { SceneCue } from '../core/content';
 import { isSolarConjunction, lightDelayMinutes } from '../core/orbit';
 import type { MissionState } from '../core/types';
-import { sceneKind } from '../render/scenes';
+import { sceneKind } from '../render/scenes/common';
 import { append, clear, h } from './dom';
 import { mmss } from './dialogue';
 

@@ -7,24 +7,36 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import type { SceneCue } from '../core/content';
 import type { MissionState, SiteId } from '../core/types';
 import type { Settings } from '../ui/store';
-import { EarthScene, EdlScene, MarsGlobeScene, OrbitScene, sceneKind, ShipScene, SurfaceScene, type SceneModule, type Tier } from './scenes';
+import { applySafeArea, Director } from './director';
+import { setHoloFlicker, tickHolo } from './holo';
+import { sceneKind, type SceneKind, type SceneModule, type Tier } from './scenes/common';
+import { EarthScene } from './scenes/earth';
+import { EdlScene } from './scenes/edl';
+import { MarsGlobeScene } from './scenes/globe';
+import { OrbitScene } from './scenes/orbit';
+import { ShipScene } from './scenes/ship';
+import { SurfaceScene } from './scenes/surface';
 
 export interface Stage {
-  setScene(cue: SceneCue, s: MissionState | null): void;
+  setScene(cue: SceneCue, s: MissionState | null, beat?: string): void;
   update(s: MissionState): void;
   previewSite(id: SiteId): void;
   setQuality(q: Settings['quality']): void;
   readonly tier: Tier | 'off';
 }
 
-// 胶片颗粒 + 暗角
+// 胶片颗粒 + 暗角 + 传感器击中（太阳粒子事件时随机亮点）
 const GrainShader = {
-  uniforms: { tDiffuse: { value: null }, time: { value: 0 }, amount: { value: 0.05 } },
+  uniforms: { tDiffuse: { value: null }, time: { value: 0 }, amount: { value: 0.05 }, hits: { value: 0 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float time; uniform float amount; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float time; uniform float amount; uniform float hits; varying vec2 vUv;
     float rand(vec2 co){ return fract(sin(dot(co, vec2(12.9898,78.233)) + time) * 43758.5453); }
+    float h2(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
     void main(){ vec4 c = texture2D(tDiffuse, vUv); float g = (rand(vUv) - 0.5) * amount; float v = smoothstep(0.95, 0.35, distance(vUv, vec2(0.5)));
-      gl_FragColor = vec4((c.rgb + g) * mix(0.72, 1.0, v), c.a); }`,
+      vec3 col = (c.rgb + g) * mix(0.72, 1.0, v);
+      if (hits > 0.0) { vec2 cell = floor(gl_FragCoord.xy / 2.0); float f = floor(time * 24.0);
+        float n = h2(cell + f * 17.0); col += vec3(1.0, 0.95, 0.9) * step(1.0 - 0.0009 * hits, n) * 1.5; }
+      gl_FragColor = vec4(col, c.a); }`,
 };
 
 function webglAvailable(): boolean {
@@ -55,14 +67,18 @@ class ThreeStage implements Stage {
   private composer: EffectComposer | null = null;
   private grain: ShaderPass | null = null;
   private renderPass: RenderPass | null = null;
-  private cache = new Map<string, SceneModule>();
+  private cache = new Map<SceneKind, SceneModule>();
   private current: SceneModule | null = null;
   private cue: SceneCue = 'control';
+  private beat: string | undefined;
+  private step = 0; // 当前提示下已经过的段落数
   private state: MissionState | null = null;
+  private director = new Director();
   private timer = new THREE.Timer();
   private fpsSamples: number[] = [];
   private auto: boolean;
   private resizeObs: ResizeObserver;
+  private switchTimer = 0;
 
   constructor(private container: HTMLElement, quality: Settings['quality']) {
     this.auto = quality === 'auto';
@@ -71,7 +87,8 @@ class ThreeStage implements Stage {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.info.autoReset = false; // 合成器多次绘制，按整帧统计
     this.renderer.domElement.style.transition = 'opacity 0.35s ease';
     container.replaceChildren(this.renderer.domElement, Object.assign(document.createElement('div'), { className: 'scene-vignette' }));
     this.renderer.domElement.setAttribute('aria-hidden', 'true');
@@ -85,12 +102,14 @@ class ThreeStage implements Stage {
     const dpr = window.devicePixelRatio || 1;
     this.renderer.setPixelRatio(this.tier === 'high' ? Math.min(2, dpr) : this.tier === 'medium' ? Math.min(1.25, dpr) : Math.min(0.85, dpr));
     this.renderer.shadowMap.enabled = this.tier === 'high';
+    setHoloFlicker(this.tier !== 'low');
     this.composer = null;
+    this.grain = null;
     if (this.tier !== 'low') {
       this.composer = new EffectComposer(this.renderer);
       this.renderPass = new RenderPass(new THREE.Scene(), new THREE.PerspectiveCamera());
       this.composer.addPass(this.renderPass);
-      this.composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), this.tier === 'high' ? 0.7 : 0.5, 0.6, 0.82));
+      this.composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), this.tier === 'high' ? 0.6 : 0.45, 0.55, 0.86));
       this.grain = new ShaderPass(GrainShader);
       this.composer.addPass(this.grain);
       this.composer.addPass(new OutputPass());
@@ -98,43 +117,71 @@ class ThreeStage implements Stage {
     this.resize();
   }
 
-  private resize(): void {
-    const w = this.container.clientWidth || window.innerWidth;
-    const hgt = this.container.clientHeight || window.innerHeight;
-    this.renderer.setSize(w, hgt, false);
-    this.composer?.setSize(w, hgt);
-    if (this.current) { this.current.camera.aspect = w / hgt; this.current.camera.updateProjectionMatrix(); }
+  private size(): [number, number] {
+    return [this.container.clientWidth || window.innerWidth, this.container.clientHeight || window.innerHeight];
   }
 
-  private build(kind: string): SceneModule {
+  private resize(): void {
+    const [w, h] = this.size();
+    this.renderer.setSize(w, h, false);
+    this.composer?.setSize(w, h);
+    if (this.current) applySafeArea(this.current.camera, w, h);
+  }
+
+  private build(kind: SceneKind): SceneModule {
+    const ctx = { tier: this.tier, renderer: this.renderer };
     switch (kind) {
-      case 'globe': return new MarsGlobeScene(this.tier);
-      case 'orbit': return new OrbitScene(this.tier);
-      case 'earth': return new EarthScene(this.tier);
-      case 'ship': return new ShipScene(this.tier);
-      case 'edl': return new EdlScene(this.tier);
-      default: return new SurfaceScene(this.tier);
+      case 'globe': return new MarsGlobeScene(ctx);
+      case 'orbit': return new OrbitScene(ctx);
+      case 'earth': return new EarthScene(ctx);
+      case 'ship': return new ShipScene(ctx);
+      case 'edl': return new EdlScene(ctx);
+      default: return new SurfaceScene(ctx);
     }
   }
 
-  setScene(cue: SceneCue, s: MissionState | null): void {
+  private startShot(index: number, cut: boolean): void {
+    const mod = this.current;
+    if (!mod) return;
+    const now = this.timer.getElapsed();
+    this.director.play(mod.shots(this.cue), index, now, mod.camera, cut);
+    mod.onShot?.(this.cue, this.director.shotIndex, this.beat, now);
+  }
+
+  // beat：剧情段落 id。同一提示下段落变化时推进到下一个机位
+  setScene(cue: SceneCue, s: MissionState | null, beat?: string): void {
+    const prevCue = this.cue, prevBeat = this.beat;
     this.cue = cue;
     this.state = s;
     const kind = sceneKind(cue);
     let mod = this.cache.get(kind);
-    const switching = mod !== this.current || !mod;
     if (!mod) { mod = this.build(kind); this.cache.set(kind, mod); }
     mod.apply(s, cue);
-    if (!switching) return;
-    const canvas = this.renderer.domElement;
-    canvas.style.opacity = '0';
-    setTimeout(() => {
-      this.current = mod!;
-      this.renderer.toneMappingExposure = mod!.exposure;
-      if (this.renderPass) { this.renderPass.scene = mod!.scene; this.renderPass.camera = mod!.camera; }
-      this.resize();
-      canvas.style.opacity = '1';
-    }, this.current ? 300 : 0);
+    const cueChanged = cue !== prevCue;
+    // 段落计数决定机位序号。提示变化时清零：章节开场那次调用不带段落，紧接着的第一个段落不应推进机位
+    let stepped = false;
+    if (cueChanged) { this.beat = beat; this.step = 0; }
+    else if (beat !== undefined) {
+      if (prevBeat !== undefined && beat !== prevBeat) { this.step++; stepped = true; }
+      this.beat = beat;
+    }
+    if (mod !== this.current) {
+      // 换场景类型：淡出后直接切机位（配合界面的“信号重建”转场）
+      const canvas = this.renderer.domElement;
+      canvas.style.opacity = '0';
+      clearTimeout(this.switchTimer);
+      const next = mod;
+      this.switchTimer = window.setTimeout(() => {
+        this.current = next;
+        this.renderer.toneMappingExposure = next.exposure;
+        if (this.renderPass) { this.renderPass.scene = next.scene; this.renderPass.camera = next.camera; }
+        this.resize();
+        this.startShot(this.step, true); // 淡出期间若已进入下一段落，直接用最新的机位序号
+        canvas.style.opacity = '1';
+      }, this.current ? 300 : 0);
+      return;
+    }
+    if (cueChanged || stepped) this.startShot(this.step, false);
   }
 
   update(s: MissionState): void {
@@ -143,8 +190,7 @@ class ThreeStage implements Stage {
   }
 
   previewSite(id: SiteId): void {
-    const globe = this.cache.get('globe') as MarsGlobeScene | undefined;
-    if (this.current !== globe) this.setScene('control', this.state);
+    if (this.current !== this.cache.get('globe')) this.setScene('control', this.state);
     (this.cache.get('globe') as MarsGlobeScene).focus(id);
   }
 
@@ -160,7 +206,7 @@ class ThreeStage implements Stage {
     this.cache.clear();
     this.current = null;
     this.applyTier();
-    this.setScene(this.cue, this.state);
+    this.setScene(this.cue, this.state, this.beat);
   }
 
   private frame(): void {
@@ -168,8 +214,11 @@ class ThreeStage implements Stage {
     const dt = Math.min(0.1, this.timer.getDelta());
     const t = this.timer.getElapsed();
     if (!this.current) return;
+    tickHolo(t);
     this.current.tick(dt, t);
-    if (this.grain) this.grain.uniforms.time.value = t;
+    this.director.update(this.current.camera, t);
+    if (this.grain) { this.grain.uniforms.time.value = t; this.grain.uniforms.hits.value = this.current.fx?.sensorHits ?? 0; }
+    this.renderer.info.reset();
     if (this.composer) this.composer.render(dt); else this.renderer.render(this.current.scene, this.current.camera);
     this.measure(dt);
   }
@@ -184,6 +233,11 @@ class ThreeStage implements Stage {
       else if (avg > 57 && this.tier === 'medium' && !isMobile()) { this.auto = false; this.setQuality('high'); this.auto = true; }
     }
   }
+
+  // 截图检查用：当前场景的面数与绘制调用
+  get info(): { triangles: number; calls: number } {
+    return { triangles: this.renderer.info.render.triangles, calls: this.renderer.info.render.calls };
+  }
 }
 
 export function createStage(container: HTMLElement, quality: Settings['quality']): Stage {
@@ -191,7 +245,9 @@ export function createStage(container: HTMLElement, quality: Settings['quality']
     return new FallbackStage(container);
   }
   try {
-    return new ThreeStage(container, quality);
+    const stage = new ThreeStage(container, quality);
+    (window as unknown as { __stage?: ThreeStage }).__stage = stage;
+    return stage;
   } catch {
     return new FallbackStage(container);
   }

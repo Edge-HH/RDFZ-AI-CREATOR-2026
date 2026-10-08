@@ -26,6 +26,34 @@
 6. **zhou**（可选）：中国女性，50 岁，职业装，干练，带一点压迫感。
 7. **capcom**（可选）：中国男性，28 岁，戴耳机，坐在通信席位前，专注。
 
+### 像素风版本（2026-10-08 新增，与 550 风格界面搭配）
+
+替换方法与上面相同。像素图请按**最近邻**放大到 256×256 再导出 PNG，不要用平滑缩放。游戏会按 `image-rendering: pixelated` 显示头像，保证边缘锐利。
+
+**统一画风后缀**：
+
+> 像素画头像，64×64 像素网格，半身胸像，3/4 侧脸朝向画面右侧，纯黑背景，有限调色板（不超过 24 色），硬边像素，不要抗锯齿、不要渐变模糊，冷白色主光从左上方打来，右侧一道细细的信号红（#ff3b30）轮廓光，科幻飞控终端风格，不要文字和标志，1:1
+
+英文版（Midjourney、Stable Diffusion 等工具对英文更敏感）：
+
+> pixel art portrait, 64x64 pixel grid, bust shot, three-quarter view facing right, pure black background, limited palette (max 24 colors), crisp hard-edged pixels, no anti-aliasing, no blur, cool white key light from upper left, thin signal-red (#ff3b30) rim light on the right, sci-fi mission control terminal aesthetic, no text, no logos, 1:1
+
+| 编号 | 中文提示词（后面接统一画风后缀） | English (append the suffix) |
+|---|---|---|
+| `qin` | 中国老人，63 岁，满头白发，戴细框老花镜，深色旧夹克，眉头微锁，眼神复杂，背后有暗淡的飞控大屏轮廓 | Chinese man, 63, white hair, thin reading glasses, worn dark jacket, slightly furrowed brow, complicated gaze, faint mission-control screens behind |
+| `lin` | 中国男性，42 岁，短寸头，两鬓微白，下颌线硬朗，深蓝色舱内服，领口有任务徽章轮廓（无文字），神情沉稳 | Chinese man, 42, short buzz cut, greying temples, strong jaw, dark navy flight suit, blank mission patch on collar, calm steady expression |
+| `amara` | 尼日利亚女性，34 岁，深色皮肤，短卷发，明亮的笑容，橙色工装袖口挽起，脸颊有一抹机油，耳后夹着一支笔 | Nigerian woman, 34, dark skin, short curly hair, bright smile, orange coveralls with rolled sleeves, grease smudge on cheek, pen tucked behind ear |
+| `andrei` | 俄罗斯男性，45 岁，修剪整齐的络腮胡，眼神疲惫但温和，白色医疗背心套在灰色舱内服外，胸前别着一支小手电 | Russian man, 45, neatly trimmed beard, tired but kind eyes, white medical vest over grey flight suit, small penlight clipped to chest |
+| `rin` | 日本女性，31 岁，高马尾，眼睛发亮、专注兴奋，脸颊沾着红色火星尘土，举着一个装岩石的样本袋 | Japanese woman, 31, high ponytail, bright eager focused eyes, red Martian dust on cheek, holding up a rock sample bag |
+| `zhou`（可选） | 中国女性，50 岁，短发利落，深灰西装，抱臂，表情严肃带压迫感 | Chinese woman, 50, sharp short hair, dark grey suit, arms crossed, stern and pressuring expression |
+| `capcom`（可选） | 中国男性，28 岁，戴单耳通信耳机和麦克风，浅蓝色制服衬衫，专注地看着屏幕，屏幕光照亮脸 | Chinese man, 28, single-ear headset with boom mic, light blue uniform shirt, focused on a screen, face lit by monitor glow |
+| `you`（可选，玩家） | 只画背影：飞控总师坐在控制台前，面前是一排屏幕，看不到脸 | back view only: flight director seated at a console facing a wall of screens, face not visible |
+
+提示：
+- 把同一组提示词一次性生成，或者用同一个种子、同一张风格参考图逐个生成，才能保证几个人的画风一致。
+- 头像会显示在两处：对话框里约 84×84，遥测抽屉里约 34×34。生成后请在 34 像素的尺寸下看一眼，确认五官还能认出来。
+- `ai`（550A-Preview）保留程序绘制的红眼，不需要生成。
+
 ## 配音
 
 台词清单见 [voice-lines.json](voice-lines.json)，共 19 句，由 `npx tsx scripts/voice-lines.ts` 从剧本自动导出。每条都有编号、说话人和台词。

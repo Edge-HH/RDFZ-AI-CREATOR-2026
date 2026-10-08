@@ -239,7 +239,7 @@ export class App {
 
   private async playBeat(v: View): Promise<void> {
     const cue = v.beat.scene ?? v.chapter.scene ?? 'control';
-    this.stage.setScene(cue, this.game.state);
+    this.stage.setScene(cue, this.game.state, v.beat.id);
     setAmbience(AMBIENCE[cue] ?? 'none', this.settings);
     this.frame.setScene(cue, CAPTIONS[cue], v.beat.title);
     this.refresh();

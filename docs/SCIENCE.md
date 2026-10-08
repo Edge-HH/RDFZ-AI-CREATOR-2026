@@ -97,3 +97,12 @@
 | 失败类结局（中止＋寂静红土） | 10%–15% | 约 16% |
 | 单个模块对最佳结局率的影响 | ≤ 25 个百分点 | 最大约 15 个百分点 |
 | 每个着陆点和能源路线都有 S 评级路径 | 是 | 是 |
+
+## 10. 影像素材出处
+
+| 用途 | 文件 | 来源 | 许可 | 处理 |
+|---|---|---|---|---|
+| 火星全球贴图 | `src/assets/textures/mars.jpg`（1440×720） | NASA 3D Resources「Mars」，<https://science.nasa.gov/3d-resources/mars>，基于 Viking 影像（USGS 处理） | 公有领域，署名 NASA/JPL-Caltech | 重新压缩为 JPEG 质量 85 |
+| 地球全球贴图 | `src/assets/textures/earth.jpg`（4096×2048） | NASA Earth Observatory「Blue Marble: Next Generation」2004 年 12 月，<https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-topography-bathymetry> | 公有领域，署名 NASA Earth Observatory | 由 5400×2700 缩放，JPEG 质量 85 |
+
+处理脚本见 `scripts/prep-textures.py`。贴图上的细节噪声、云层、地形起伏、天空和全部模型由代码程序生成。着陆点地形仍按 SITES 中的示意剖面生成，不是 MOLA 实测高程。
