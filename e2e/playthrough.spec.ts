@@ -15,6 +15,8 @@ test('从标题开始，完整通关到结局，并能再次挑战', async ({ pa
   expect(result).toBe('ending');
   await expect(page.locator('.ending-hero .grade')).toHaveText(/[SABCD]/);
   await expect(page.locator('.chart')).toBeVisible();
+  await expect(page.locator('.journey li')).toHaveCount(6);
+  await expect(page.locator('.journey li.now')).toContainText('2035');
   // 结局页不应产生横向滚动
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(1);

@@ -304,7 +304,7 @@ export const ch4: Chapter = {
       lines: [
         L('capcom', '日凌开始：太阳运行到地球与火星之间，太阳等离子体会吞掉我们的信号。', { tone: 'alert' }),
         L('capcom', '接下来 15 天，我们和乘组之间不会有任何通信。'),
-        L('capcom', '老秦退休前给你留了张纸条：“该说的话，提前说完。”'),
+        L('capcom', '老秦退休前给你留了张纸条：“该说的话，提前说完。剩下的，交给看得见路的人。”'),
         L('lin', '我们准备好了。把你想说的写下来吧。'),
       ],
       decision: { kind: 'presets', prompt: '日凌预案：选择 3 张', pool: CONJ_POOL, pick: 3 },
@@ -318,7 +318,7 @@ export const ch4: Chapter = {
             L('capcom', '信号恢复。他们还在。', { tone: 'warm' })],
         };
       },
-      archive: ['conjunction'],
+      archive: ['conjunction', 'zunyi'],
       days: (s) => Math.max(0, CONJUNCTION_END - s.day),
     },
     {

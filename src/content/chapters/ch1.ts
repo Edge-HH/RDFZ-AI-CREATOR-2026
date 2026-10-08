@@ -106,6 +106,7 @@ export const ch1: Chapter = {
       },
       days: (s) => -s.day,
       key: true,
+      archive: ['cz_rocket'],
     },
     {
       id: 'orbit',
@@ -114,6 +115,7 @@ export const ch1: Chapter = {
       lines: [
         L('lin', '祝融一号，地火转移轨道入轨成功。', { voice: 'ch1_03' }),
         L('rin', '地球……真蓝啊。'),
+        L('qin', '火箭叫“长征”。名字是前人起的，路得我们接着走。'),
         L('qin', '从现在开始，你和他们之间的距离，每天都在变长。', { voice: 'ch1_04' }),
       ],
     },

@@ -9,6 +9,8 @@ import { ARRIVAL_DAY, RETURN_DAY } from '../src/core/orbit';
 import { ARCHIVE } from '../src/content/archive';
 import { MODULES } from '../src/content/modules';
 import { PRESETS } from '../src/content/presets';
+import { journey } from '../src/content/journey';
+import { createState } from '../src/core/state';
 
 const ENDING_IDS = ['triumph', 'safe', 'stayed', 'cost', 'abort', 'silent', 'letgo'];
 
@@ -66,6 +68,15 @@ describe('知识档案', () => {
       .map((p) => readFileSync(p, 'utf8')).join('\n');
     const unreachable = ARCHIVE.map((a) => a.id).filter((id) => !id.startsWith('site_') && !src.includes(`'${id}'`));
     expect(unreachable).toEqual([]);
+  });
+  test('征程长卷：前人四程、你这一程、下一程，留守者会被写进下一程', () => {
+    const s = createState(1);
+    const j = journey(s, '平安归来', 'A');
+    expect(j.map((x) => x.kind)).toEqual(['past', 'past', 'past', 'past', 'now', 'next']);
+    expect(j[4].note).toContain('平安归来');
+    expect(j[4].note).toContain('A');
+    const stayed = { ...s, crew: s.crew.map((c) => (c.id === 'rin' ? { ...c, status: 'stayed' as const } : c)) };
+    expect(journey(stayed, '留守者', 'B')[5].note).toContain(CAST.rin.name);
   });
   test('档案链接都是 https 地址', () => {
     for (const a of ARCHIVE) for (const l of a.links ?? []) expect(l.url).toMatch(/^https:\/\//);

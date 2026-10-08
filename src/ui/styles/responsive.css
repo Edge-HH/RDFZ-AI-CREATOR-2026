@@ -39,6 +39,12 @@
 
   .drawer { width: 100%; border-right: 0; }
   .two-col { grid-template-columns: 1fr; }
+  .journey { grid-template-columns: 1fr; }
+  .journey li { border-top: 0; border-left: 1px solid var(--line-2); padding: 0 0 8px 16px; flex-flow: row wrap; align-items: baseline; gap: 0 8px; }
+  .journey .n { flex-basis: 100%; }
+  .journey li::before { top: 6px; left: -4px; }
+  .journey li.now { border-left-color: var(--signal); }
+  .journey li.next { border-left-style: dashed; padding-bottom: 0; }
   .sheet { padding: 16px; }
   .sheet-foot { bottom: -16px; }
   .title-screen { align-content: center; gap: 14px; }

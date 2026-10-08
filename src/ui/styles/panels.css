@@ -97,6 +97,19 @@
 .ending-hero h2 { margin: 6px 0; font-size: 32px; letter-spacing: 0.16em; font-weight: 600; }
 .ending-hero .epi { color: var(--muted); font-style: italic; }
 .ending-body p { margin: 0 0 8px; }
+/* 征程长卷：前人 → 你 → 下一程 */
+.journey { list-style: none; margin: 8px 0 18px; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; }
+.journey li { position: relative; padding: 14px 10px 0 0; border-top: 1px solid var(--line-2); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.journey li::before { content: ''; position: absolute; top: -4px; left: 0; width: 7px; height: 7px; background: var(--line-3); }
+.journey .y { font-family: var(--mono); font-size: 12px; color: var(--dim); letter-spacing: 0.08em; }
+.journey b { font-size: 14px; font-weight: 600; color: var(--muted); }
+.journey .n { font-size: 12px; color: var(--dim); line-height: 1.5; }
+.journey li.now { border-top-color: var(--signal); }
+.journey li.now::before { background: var(--signal); box-shadow: 0 0 10px var(--signal); }
+.journey li.now .y, .journey li.now b { color: var(--text); }
+.journey li.now .n { color: var(--muted); }
+.journey li.next { border-top-style: dashed; }
+.journey li.next::before { background: none; border: 1px solid var(--line-3); }
 .tone-bright .grade { color: var(--text); text-shadow: 0 0 24px rgba(230, 232, 234, 0.5); } .tone-warm .grade { color: var(--mars); } .tone-grey .grade { color: var(--muted); } .tone-dark .grade { color: var(--signal); }
 .chart { width: 100%; height: 200px; display: block; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); }

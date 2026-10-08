@@ -3,6 +3,7 @@ import { DOSE_LIMIT, rateMission, SCI_HIGH, type EndingId } from '../core/ending
 import type { HistoryEntry, MissionState, Mode } from '../core/types';
 import { ARCHIVE, type ArchiveCard } from '../content/archive';
 import { ENDINGS } from '../content/endings';
+import { journey } from '../content/journey';
 import { SERIES, historyChart } from './charts';
 import { clear, h, ICON, svg } from './dom';
 
@@ -144,6 +145,9 @@ export function endingScreen(s: MissionState, ending: EndingId, newArchive: stri
       h('div.code', { style: 'margin-bottom:10px' }, 'MISSION REPORT · 任务结算'),
       h('div.grade', { 'aria-label': `评级 ${rating.grade}` }, rating.grade),
       h('h2', {}, e.title), h('div.epi', {}, e.epigraph)),
+    h('h4', {}, '征程'),
+    h('ol.journey', { 'aria-label': '征程时间线' }, journey(s, e.title, rating.grade).map((j) =>
+      h('li', { class: j.kind }, h('span.y', {}, j.year), h('b', {}, j.title), h('span.n', {}, j.note)))),
     h('div.two-col', {},
       h('div', {},
         h('div.ending-body', {}, e.body(s).map((p) => h('p', {}, p))),
