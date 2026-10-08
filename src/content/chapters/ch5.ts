@@ -20,6 +20,7 @@ function finalLines(s: MissionState): Line[] {
   if (stayed) out.push(L(stayed.id, '（火星，延迟 14 分钟）替我看看海。下一个窗口见。', { tone: 'warm' }));
   const lost = s.crew.filter((c) => c.status === 'lost');
   for (const c of lost) out.push(L('sys', `${CAST[c.id].name}的名字，被刻在了着陆点的一块石头上。`, { tone: 'cold' }));
+  out.push(L('ai', '任务日志归档完毕。550A-Preview 工程样机测试结束。'), L('ai', '测试结论：建议转入正式型号研制。'));
   return out;
 }
 
@@ -140,7 +141,12 @@ export const ch5: Chapter = {
               failLines: (s) => (hasFlag(s, 'low_fuel_ascent')
                 ? [L('sys', '上升器在 41 公里高度推进剂耗尽，未能进入交会轨道。', { tone: 'cold' }), L('sys', '最后一帧遥测：舱内四人，心率平稳。', { tone: 'cold' })]
                 : [L('sys', '上升段一台发动机提前关机，返回飞船启用备份燃料完成捕获。乘员受到冲击。', { tone: 'alert' })]),
-              okLines: [L('lin', '入轨。交会对接完成。'), L('amara', '再见了，火星。')] },
+              okLines: (s) => {
+                const stayed = s.crew.find((c) => c.status === 'stayed');
+                const who = (['rin', 'amara', 'lin', 'andrei'] as CrewId[]).find((id) => isActive(s, id)) ?? 'lin';
+                return [L('lin', '入轨。交会对接完成。'), L('amara', '再见了，火星。'),
+                  L(who, stayed ? `笨笨，替我们陪着${CAST[stayed.id].name}。` : '笨笨，看家。')];
+              } },
             lines: [L('lin', '点火！')] },
         ],
       },

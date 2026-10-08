@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import { CHAPTERS } from '../src/content';
-import { autoplay, randomPolicy, heuristicPolicy } from '../src/sim/autoplay';
+import { autoplay, randomPolicy, heuristicPolicy, type Policy } from '../src/sim/autoplay';
+import { CAST } from '../src/content/cast';
+import type { Line } from '../src/core/content';
+import { Game } from '../src/core/flow';
+import { rngNext, seedFrom } from '../src/core/rng';
 import { ARRIVAL_DAY, RETURN_DAY } from '../src/core/orbit';
 import { ARCHIVE } from '../src/content/archive';
 import { MODULES } from '../src/content/modules';
@@ -65,5 +69,38 @@ describe('知识档案', () => {
   });
   test('档案链接都是 https 地址', () => {
     for (const a of ARCHIVE) for (const l of a.links ?? []) expect(l.url).toMatch(/^https:\/\//);
+  });
+});
+
+// 逐局收集频道里出现的全部台词
+function playLines(seed: number, policy: Policy): Line[] {
+  const g = new Game(CHAPTERS, seed, 'standard');
+  let r = seedFrom(seed * 31 + 7);
+  const rand = () => { const [v, n] = rngNext(r); r = n; return v; };
+  const lines: Line[] = [];
+  for (let steps = 0; g.stage !== 'ending' && steps < 500; steps++) {
+    const view = g.view();
+    if (view.stage === 'chapterEnd') { g.next(); continue; }
+    lines.push(...view.lines);
+    if (view.beat.decision) lines.push(...g.choose(policy(view, g.state, rand)).lines);
+    else g.next();
+  }
+  return lines;
+}
+
+describe('致敬彩蛋（《流浪地球》）', () => {
+  const runs = Array.from({ length: 40 }, (_, i) => playLines(i + 1, i % 2 ? randomPolicy : heuristicPolicy));
+
+  test('所有台词的发言者都在角色表里', () => {
+    for (const lines of runs) for (const l of lines) expect(CAST[l.speaker]).toBeDefined();
+  });
+  test('550A-Preview 每局都会在频道里发言', () => {
+    expect(CAST.ai.name).toBe('550A-Preview');
+    for (const lines of runs) expect(lines.some((l) => l.speaker === 'ai')).toBe(true);
+  });
+  test('走到火星地表的对局里都能见到笨笨', () => {
+    const surface = runs.filter((lines) => lines.some((l) => l.text.includes('火星日')));
+    expect(surface.length).toBeGreaterThan(20);
+    for (const lines of surface) expect(lines.some((l) => l.text.includes('笨笨'))).toBe(true);
   });
 });

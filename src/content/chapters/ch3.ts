@@ -69,6 +69,7 @@ export const ch3: Chapter = {
         const r = resolveBlackout(s, EDL_FAULTS);
         const head: Line[] = [
           L('sys', '— 通信盲区 · 着陆器已进入大气 —', { tone: 'cold' }),
+          L('ai', '着陆器自主程序运行中。本机无权干预，也来不及干预。'),
           L('sys', 'E+0:00 进入大气 · E+1:20 等离子体黑障 · E+4:10 开伞 · E+5:40 抛隔热罩 · E+6:30 动力下降'),
         ];
         return { state: r.state, lines: [...head, ...r.lines, ...landingReport(r.state)] };

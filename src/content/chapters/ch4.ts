@@ -49,6 +49,8 @@ export const ch4: Chapter = {
         return [
           L('sys', `第 ${solOf(s.day)} 火星日 · 日均发电 ${r.powerGen.toFixed(1)} kW / 需求 ${r.powerNeed.toFixed(1)} kW`),
           L('amara', '预置营地状态良好，推进剂工厂已经在工作了——它会一直生产到我们离开的那天。'),
+          L('amara', '营地的四足搬运机器人也醒了。凛给它起了个名字，叫“笨笨”。'),
+          L('rin', '因为它走路总是先迈错腿。不过它从来没摔过。'),
           L('amara', '记住：工厂要电，也要水。我们缺什么，回家的燃料就缺什么。'),
           L('rin', '我可以先把实验室架起来吗？北边那片层状沉积看着太诱人了。'),
           L('lin', '先定个顺序吧。人手就这么多。'),
@@ -118,7 +120,8 @@ export const ch4: Chapter = {
             risk: { base: 0.28, useSafety: true, label: '落石或滑坠', mod: (s) => (s.site === 'jezero' ? 0.05 : 0),
               ok: (s) => ({ science: 30 * sciMult(s), archive: ['strata'] }),
               fail: (s) => ({ science: 8 * sciMult(s), integrity: -5, crew: { [fieldMate(s)]: { health: -45, status: 'injured' } } as Effect['crew'] }),
-              okLines: [L('rin', '拿到了！三十七块定向岩芯。总师，你一定要看看这些纹理。', { voice: 'ch4_03', tone: 'warm' })],
+              okLines: [L('rin', '拿到了！三十七块定向岩芯。总师，你一定要看看这些纹理。', { voice: 'ch4_03', tone: 'warm' }),
+                L('rin', '岩芯箱是笨笨驮下坡的。它今天一次都没迈错腿。')],
               failLines: [L('sys', '坡面落石。考察队员一人被砸伤腿部，靠同伴拖回漫游车。', { tone: 'alert' })] },
             lines: [L('rin', '出发！')] },
           { id: 'short', label: '批准短途考察（4 小时）',
@@ -155,6 +158,9 @@ export const ch4: Chapter = {
           r.powerGen >= r.powerNeed
             ? L('amara', '裂变堆稳得像块石头。外面天昏地暗，我们这儿灯火通明。')
             : L('amara', '电不够。储能撑不了几天。这场沙暴可能要刮两三个月。', { tone: 'alert' }),
+          r.powerGen >= r.powerNeed
+            ? L('amara', '笨笨还在外面巡检，回来时浑身是土，像一块会走路的红砖。')
+            : L('amara', '笨笨自己进了休眠。省下的每一瓦，都留给了生保。'),
           L('lin', '天是橙黑色的，正午像黄昏。'),
         ];
       },
@@ -307,7 +313,9 @@ export const ch4: Chapter = {
         const r = resolveBlackout(pre, CONJ_FAULTS);
         return {
           state: r.state,
-          lines: [L('sys', '— 日凌 · 通信中断 15 天 —', { tone: 'cold' }), ...r.lines, L('capcom', '信号恢复。他们还在。', { tone: 'warm' })],
+          lines: [L('sys', '— 日凌 · 通信中断 15 天 —', { tone: 'cold' }), ...r.lines,
+            L('ai', '日凌期间乘组的处置，与本机推演的最优解不完全一致。'),
+            L('capcom', '信号恢复。他们还在。', { tone: 'warm' })],
         };
       },
       archive: ['conjunction'],

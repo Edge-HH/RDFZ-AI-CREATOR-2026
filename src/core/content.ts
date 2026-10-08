@@ -2,7 +2,7 @@
 import type { Risk } from './risk';
 import type { Effect, MissionState } from './types';
 
-export type Speaker = 'qin' | 'lin' | 'amara' | 'andrei' | 'rin' | 'zhou' | 'capcom' | 'sys' | 'you';
+export type Speaker = 'qin' | 'lin' | 'amara' | 'andrei' | 'rin' | 'zhou' | 'capcom' | 'ai' | 'sys' | 'you';
 
 export interface Line {
   speaker: Speaker;

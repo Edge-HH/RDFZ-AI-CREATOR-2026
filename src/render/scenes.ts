@@ -373,6 +373,33 @@ export class EdlScene implements SceneModule {
   dispose(): void { disposeTree(this.scene); }
 }
 
+// 笨笨：营地的四足搬运机器人（致敬《流浪地球》）。机头朝 +x，返回身体与四个髋关节
+function benbenModel(): { body: THREE.Group; hips: THREE.Group[] } {
+  const shell = new THREE.MeshStandardMaterial({ color: '#e9ecef', roughness: 0.55, metalness: 0.2 });
+  const dark = new THREE.MeshStandardMaterial({ color: '#2b2f36', roughness: 0.7, metalness: 0.3 });
+  const body = new THREE.Group();
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 1.2), shell);
+  torso.position.y = 1.6;
+  const cargo = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.5, 1), dark); // 背上的货箱
+  cargo.position.y = 2.3;
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.8), shell);
+  head.position.set(1.3, 1.8, 0);
+  const lamp = new THREE.Mesh(new THREE.CircleGeometry(0.16, 16), new THREE.MeshBasicMaterial({ color: '#7fd1ff' }));
+  lamp.position.set(1.56, 1.85, 0);
+  lamp.rotation.y = Math.PI / 2;
+  body.add(torso, cargo, head, lamp);
+  const hips = [[0.8, 0.6], [0.8, -0.6], [-0.8, 0.6], [-0.8, -0.6]].map(([x, z]) => {
+    const hip = new THREE.Group();
+    hip.position.set(x, 1.4, z);
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 1.4, 8), dark);
+    leg.position.y = -0.7;
+    hip.add(leg);
+    body.add(hip);
+    return hip;
+  });
+  return { body, hips };
+}
+
 // ---------------- 火星地表基地 ----------------
 export class SurfaceScene implements SceneModule {
   scene = new THREE.Scene();
@@ -392,6 +419,7 @@ export class SurfaceScene implements SceneModule {
   private tau = 0.5;
   private fog = new THREE.FogExp2('#c08a5e', 0.0012);
   private heightAt: (x: number, z: number) => number = () => 0;
+  private benben: { body: THREE.Group; hips: THREE.Group[] } | null = null;
 
   constructor(private tier: Tier) {
     this.skyMat = new THREE.ShaderMaterial({
@@ -558,6 +586,7 @@ export class SurfaceScene implements SceneModule {
   private buildBase(s: MissionState) {
     disposeTree(this.base);
     this.base.clear();
+    this.benben = null;
     const white = new THREE.MeshStandardMaterial({ color: '#eef0f2', roughness: 0.6, metalness: 0.15 });
     const solar = new THREE.MeshStandardMaterial({ color: '#1d2f5e', roughness: 0.3, metalness: 0.5, emissive: '#050b1c' });
     const add = (m: THREE.Object3D, x: number, z: number, lift = 0) => {
@@ -599,6 +628,8 @@ export class SurfaceScene implements SceneModule {
       hab.add(berm);
     }
     add(hab, 0, 0);
+    this.benben = benbenModel();
+    add(this.benben.body, -4, -11);
     if (!landing) {
       const hab2 = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 10, 32), white);
       hab2.rotation.x = Math.PI / 2;
@@ -685,6 +716,15 @@ export class SurfaceScene implements SceneModule {
     for (let i = 0; i < p.count; i++) { let x = p.getX(i) + dt * wind; if (x > 200) x -= 400; p.setX(i, x); }
     p.needsUpdate = true;
     (this.dust.material as THREE.PointsMaterial).opacity = 0.25 + storm * 0.6;
+    if (this.benben) {
+      // 在居住舱与太阳能板之间来回巡检，走到两端时原地掉头
+      const x = -4 + 14 * Math.sin(t * 0.07);
+      const v = Math.cos(t * 0.07);
+      const { body, hips } = this.benben;
+      body.position.set(x, this.heightAt(x, -11), -11);
+      body.rotation.y = (1 - Math.max(-1, Math.min(1, v * 4))) * (Math.PI / 2);
+      hips.forEach((hip, i) => { hip.rotation.z = Math.sin(t * 6 + (i === 0 || i === 3 ? 0 : Math.PI)) * 0.45 * Math.abs(v); });
+    }
     if (this.cue === 'ascent') {
       const k = (t % 16) / 16;
       this.mav.position.y = this.heightAt(38, -30) + Math.max(0, k - 0.15) ** 2 * 400;
