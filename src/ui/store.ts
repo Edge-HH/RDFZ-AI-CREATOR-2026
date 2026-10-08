@@ -28,12 +28,13 @@ export function remove(key: string): void {
 
 export interface Settings {
   voice: boolean;
+  voiceSpeed: 'slow' | 'mid' | 'fast'; // 配音语速（三套录音）
   sfx: boolean;
   speed: 'slow' | 'normal' | 'fast' | 'instant';
   quality: 'auto' | 'high' | 'medium' | 'low' | 'off';
   auto: boolean; // 对话自动推进
 }
 
-export const DEFAULT_SETTINGS: Settings = { voice: true, sfx: true, speed: 'normal', quality: 'auto', auto: false };
+export const DEFAULT_SETTINGS: Settings = { voice: false, voiceSpeed: 'mid', sfx: true, speed: 'normal', quality: 'auto', auto: false };
 export const loadSettings = (): Settings => ({ ...DEFAULT_SETTINGS, ...load<Partial<Settings>>('settings', {}) });
 export const saveSettings = (s: Settings) => save('settings', s);

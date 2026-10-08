@@ -228,7 +228,7 @@ export class Dialogue {
       const sys = line.speaker === 'sys';
       sfx(sys && line.tone === 'alert' ? 'alert' : 'blip', this.settings());
       this.voiceP = null;
-      const voiced = line.voice && this.settings().voice && !this.instant ? playVoice(line.voice) : null;
+      const voiced = line.voice && this.settings().voice && this.settings().sfx && !this.instant ? playVoice(line.voice, this.settings().voiceSpeed) : null;
       if (voiced) {
         this.voiceP = voiced;
         void voiced.then(() => { if (this.voiceP === voiced) { this.voiceP = null; if (this.phase !== 'typing') this.el.classList.remove('speaking'); } });

@@ -1,5 +1,5 @@
 // 导出需要配音的台词：npx tsx scripts/voice-lines.ts > docs/voice-lines.json
-// 生成的音频放在 public/voice/<id>.mp3，构建时会复制到 dist/voice/
+// 生成的音频放在 public/voice/<slow|mid|fast>/<id>.mp3（三档语速），构建时会复制到 dist/voice/
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CAST } from '../src/content/cast';

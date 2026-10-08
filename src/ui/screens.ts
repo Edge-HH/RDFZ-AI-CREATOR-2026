@@ -220,7 +220,8 @@ export function settingsScreen(settings: Settings, onChange: (s: Settings) => vo
       h('div', {}, h('div.hint', {}, '画质（低配设备请选“低”或“关闭 3D”）'), seg('quality', [['auto', '自动'], ['high', '高'], ['medium', '中'], ['low', '低'], ['off', '关闭 3D']])),
       h('div', {}, h('div.hint', {}, '对话速度（打字与自动推进）'), seg('speed', [['slow', '慢'], ['normal', '正常'], ['fast', '快']])),
       h('div', {}, h('div.hint', {}, '自动推进对话（也可在对话框按 A 切换）'), seg('auto', [[false, '关'], [true, '开']])),
-      h('div', {}, h('div.hint', {}, '配音'), seg('voice', [[true, '开'], [false, '关']])),
+      h('div', {}, h('div.hint', {}, '配音（关键台词，默认关闭）'), seg('voice', [[true, '开'], [false, '关']])),
+      h('div', {}, h('div.hint', {}, '配音语速'), seg('voiceSpeed', [['slow', '慢'], ['mid', '中'], ['fast', '快']])),
       h('div', {}, h('div.hint', {}, '音效与环境音'), seg('sfx', [[true, '开'], [false, '关']]))),
     h('div.sheet-foot', {}, h('span.spacer'), h('button.btn.primary', { type: 'button', onclick: () => { o.remove(); onClose(); } }, '完成'))));
 }

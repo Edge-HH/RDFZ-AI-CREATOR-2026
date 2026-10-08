@@ -66,7 +66,7 @@
 
 台词清单见 [voice-lines.json](voice-lines.json)，共 19 句，由 `npx tsx scripts/voice-lines.ts` 从剧本自动导出。每条都有编号、说话人和台词。
 
-把音频保存为 `public/voice/<编号>.mp3`。建议码率 48 kbps 单声道，这样 19 句总共不到 1 MB。
+把音频保存为 `public/voice/<语速>/<编号>.mp3`，语速目录为 `slow`、`mid`、`fast` 三套（设置页“配音语速”切换，默认 `mid`；配音默认关闭）。建议码率 48 kbps 单声道，这样 19 句总共不到 1 MB。
 
 | 说话人 | 音色建议 |
 |---|---|

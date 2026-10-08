@@ -138,7 +138,7 @@ src/
 assets/                   // 构建时内联
   heightmaps/*.bin        // 三个着陆点的 MOLA 裁剪数据，每个 256² 或 512²，压缩后存储
   textures/*.jpg          // 火星全球拼接图（NASA/USGS，公有领域），2K 分辨率
-public/voice/*.mp3        // TTS 产出
+public/voice/<slow|mid|fast>/*.mp3  // TTS 产出，三档语速
 scripts/
   simulate.ts             // 蒙特卡洛平衡测试
   prep-mola.ts            // 离线把高程数据处理成 bin 文件（只运行一次，产物入库）

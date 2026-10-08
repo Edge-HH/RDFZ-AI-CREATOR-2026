@@ -61,7 +61,7 @@ export class App {
       onArchive: () => archiveScreen(this.unlocked(), () => {}),
       onRules: () => rulesScreen(() => {}),
       onSettings: () => settingsScreen(this.settings, (s) => this.applySettings(s), () => {}),
-      onMute: () => { this.applySettings({ ...this.settings, sfx: !this.settings.sfx, voice: !this.settings.sfx }); return this.settings.sfx; },
+      onMute: () => { this.applySettings({ ...this.settings, sfx: !this.settings.sfx }); return this.settings.sfx; },
     });
     this.dialogue = new Dialogue(() => this.settings, this.backlog, (on) => this.applySettings({ ...this.settings, auto: on }), () => this.backlog.open());
     this.choices = h('div.choices', { role: 'group', 'aria-label': '可选指令' });
@@ -88,7 +88,7 @@ export class App {
       else this.stage.setQuality(s.quality);
     }
     if (!s.sfx) setAmbience('none', s);
-    if (!s.voice) stopVoice();
+    if (!s.voice || !s.sfx) stopVoice();
     this.dialogue?.syncAuto();
   }
 

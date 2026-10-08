@@ -1,0 +1,179 @@
+{
+  "segments": [
+    {
+      "id": "ch0_01",
+      "character": "qin",
+      "file": "ch0_01.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "来了？坐吧。这把椅子，从明天起就是你的了。",
+      "start_s": 0.0,
+      "duration_s": 5.44
+    },
+    {
+      "id": "ch0_02",
+      "character": "qin",
+      "file": "ch0_02.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "在这间屋子里，你最先要学会的不是操作，是等待。",
+      "start_s": 5.84,
+      "duration_s": 6.4
+    },
+    {
+      "id": "ch0_04",
+      "character": "qin",
+      "file": "ch0_04.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "对。我们能做的，是在它出事之前，把该说的话说完。",
+      "start_s": 12.64,
+      "duration_s": 5.44
+    },
+    {
+      "id": "ch1_01",
+      "character": "qin",
+      "file": "ch1_01.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "地球和火星，每 26 个月才排成一次合适的角度。错过这次，下一次是 2037 年。",
+      "start_s": 18.48,
+      "duration_s": 8.96
+    },
+    {
+      "id": "ch1_02",
+      "character": "qin",
+      "file": "ch1_02.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "最稳的那个，不一定最对。最对的那个，也不一定稳。",
+      "start_s": 27.84,
+      "duration_s": 7.68
+    },
+    {
+      "id": "ch1_03",
+      "character": "lin",
+      "file": "ch1_03.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "祝融一号，地火转移轨道入轨成功。",
+      "start_s": 35.92,
+      "duration_s": 3.04
+    },
+    {
+      "id": "ch1_04",
+      "character": "qin",
+      "file": "ch1_04.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "从现在开始，你和他们之间的距离，每天都在变长。",
+      "start_s": 39.36,
+      "duration_s": 6.24
+    },
+    {
+      "id": "ch2_01",
+      "character": "qin",
+      "file": "ch2_01.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "再过几天就是进入、下降与着陆。整整七分钟，你什么都做不了。",
+      "start_s": 46.0,
+      "duration_s": 9.12
+    },
+    {
+      "id": "ch3_04",
+      "character": "lin",
+      "file": "ch3_04.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "祝融一号……着陆。四个人，都在。",
+      "start_s": 55.52,
+      "duration_s": 4.64
+    },
+    {
+      "id": "ch3_01",
+      "character": "qin",
+      "file": "ch3_01.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "着陆器会以每秒 5.8 公里的速度撞进大气。隔热罩、降落伞、反推——七分钟后，要么停在地面上，要么不。",
+      "start_s": 60.56,
+      "duration_s": 10.4
+    },
+    {
+      "id": "ch3_05",
+      "character": "rin",
+      "file": "ch3_05.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "我能看见地平线了。总师——这里是火星。",
+      "start_s": 71.36,
+      "duration_s": 4.32
+    },
+    {
+      "id": "ch3_06",
+      "character": "lin",
+      "file": "ch3_06.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "这一步，属于所有仰望过星空的人。",
+      "start_s": 76.08,
+      "duration_s": 3.36
+    },
+    {
+      "id": "ch4_01",
+      "character": "qin",
+      "file": "ch4_01.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "今天是我最后一个班。走之前，有件事得交给你定。",
+      "start_s": 79.84,
+      "duration_s": 4.96
+    },
+    {
+      "id": "ch4_02",
+      "character": "qin",
+      "file": "ch4_02.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "我当年要是有你这份胆量……算了。",
+      "start_s": 85.2,
+      "duration_s": 5.28
+    },
+    {
+      "id": "ch4_03",
+      "character": "rin",
+      "file": "ch4_03.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "拿到了！三十七块定向岩芯。总师，你一定要看看这些纹理。",
+      "start_s": 90.88,
+      "duration_s": 5.76
+    },
+    {
+      "id": "ch5_05",
+      "character": "lin",
+      "file": "ch5_05.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "这里是祝融一号。我们……回来了。",
+      "start_s": 97.04,
+      "duration_s": 3.2
+    },
+    {
+      "id": "ch5_02",
+      "character": "rin",
+      "file": "ch5_02.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "谢谢你。我会每天给你们发照片——延迟十几分钟的那种。",
+      "start_s": 100.64,
+      "duration_s": 4.32
+    },
+    {
+      "id": "ch5_03",
+      "character": "qin",
+      "file": "ch5_03.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "退休了，闲不住，就回来看看。",
+      "start_s": 105.36,
+      "duration_s": 3.2
+    },
+    {
+      "id": "ch5_04",
+      "character": "qin",
+      "file": "ch5_04.wav",
+      "voice_model": "mimo-v2.5-tts",
+      "text": "……嗯。那条指令，我终于可以不再想了。",
+      "start_s": 108.96,
+      "duration_s": 4.8
+    }
+  ],
+  "gap_ms": 400,
+  "combined": "voiceover.wav",
+  "subtitles": "voiceover.srt",
+  "total_s": 114.16
+}
