@@ -54,6 +54,14 @@
 - 头像会显示在两处：对话框里约 84×84，遥测抽屉里约 34×34。生成后请在 34 像素的尺寸下看一眼，确认五官还能认出来。
 - `ai`（550A-Preview）保留程序绘制的红眼，不需要生成。
 
+### 已接入的头像（2026-10-08）
+
+- 已使用 **Codex 内置图片生成工具**完成像素版的 `qin`、`lin`、`amara`、`andrei`、`rin`、`zhou`、`capcom`、`you`，均位于 `src/assets/portraits/<编号>.png`。
+- 先生成秦岳，再将其原图仅用作其他角色的画风参考，统一黑底、左上冷白主光和右侧红色轮廓光；玩家只画背影。实际提交给生成工具的完整提示词记录在 [portrait-generation.json](portrait-generation.json)。
+- 生成原图经 `scripts/prep-portraits.py` 整理为 64×64 像素、最多 24 色，关闭抖动，再以最近邻放大到 256×256 PNG。程序自动加载，无需修改剧本或头像加载逻辑。
+- 以后整理新的一组原图，可运行 `python scripts/prep-portraits.py <原图目录> <新的输出目录>`（需 Pillow）。原图按角色编号命名；脚本拒绝覆盖已有文件，确认新稿后再自行替换。
+- 执行 `npm run build` 后头像会内联进 `dist/index.html`，离线运行无需额外图片目录；执行 `npm run package` 可更新离线压缩包。
+
 ## 配音
 
 台词清单见 [voice-lines.json](voice-lines.json)，共 19 句，由 `npx tsx scripts/voice-lines.ts` 从剧本自动导出。每条都有编号、说话人和台词。

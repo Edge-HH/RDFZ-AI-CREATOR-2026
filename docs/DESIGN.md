@@ -133,7 +133,7 @@ src/
     shaders/ atmosphere sky dust plasma
   ui/                     // 原生 DOM 加 CSS，不引入框架
     hud.ts comms.ts decision.ts loadout.ts presets.ts report.ts archive.ts title.ts
-    portraits.ts          // 程序绘制的徽章头像，后续可替换为 AI 图
+    portraits.ts          // 自动加载 AI 像素头像，缺失时回退徽章；550A 保留红眼
   audio/ synth.ts voice.ts
 assets/                   // 构建时内联
   heightmaps/*.bin        // 三个着陆点的 MOLA 裁剪数据，每个 256² 或 512²，压缩后存储

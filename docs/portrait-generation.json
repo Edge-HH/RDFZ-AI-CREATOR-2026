@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-08",
+  "tool": "Codex built-in image_gen",
+  "style": "pixel art",
+  "sourceDocument": "docs/PROMPTS.md",
+  "processing": {
+    "baseSize": [
+      64,
+      64
+    ],
+    "maxColors": 24,
+    "dither": false,
+    "exportSize": [
+      256,
+      256
+    ],
+    "resampling": "nearest-neighbor",
+    "script": "scripts/prep-portraits.py"
+  },
+  "portraits": [
+    {
+      "id": "qin",
+      "name": "秦岳",
+      "file": "src/assets/portraits/qin.png",
+      "prompt": "Use case: illustration-story. Asset type: individual game character portrait for the Chinese Mars mission narrative game 光速之隔, displayed at 84x84 and 34x34. Style: authentic restrained 64x64 pixel-grid art, square 1:1, bust shot, three-quarter view facing image right (except the explicitly back-view player), pure black background, limited palette of at most 24 colors, crisp hard-edged square pixels, no antialiasing, no blurred gradients. Cool white key light from upper left, thin signal red (#ff3b30) rim light on the right, sci-fi mission-control terminal aesthetic. Use large simple readable pixel clusters for the face, eyes and clothing; frame the head prominently with chest in the lower part and a small black margin, so features remain identifiable at 34 pixels. Final image should visually resemble a native 64x64 sprite enlarged with nearest-neighbor pixels. No text, letters, numerals, logos, flags, watermark, border, UI, collage or other characters. A single complete standalone portrait, edge-to-edge square image. Do not add decorative scenery; any requested screen silhouettes must be extremely faint and keep the background mostly black.\nSubject for this single portrait: Chinese man, 63 years old, full white hair, thin reading glasses, worn dark jacket, slightly furrowed brow, complicated thoughtful gaze, faint mission-control screen silhouettes behind.",
+      "styleReference": null
+    },
+    {
+      "id": "lin",
+      "name": "林照",
+      "file": "src/assets/portraits/lin.png",
+      "prompt": "Use case: illustration-story. Asset type: individual game character portrait for the Chinese Mars mission narrative game 光速之隔, displayed at 84x84 and 34x34. Style: authentic restrained 64x64 pixel-grid art, square 1:1, bust shot, three-quarter view facing image right (except the explicitly back-view player), pure black background, limited palette of at most 24 colors, crisp hard-edged square pixels, no antialiasing, no blurred gradients. Cool white key light from upper left, thin signal red (#ff3b30) rim light on the right, sci-fi mission-control terminal aesthetic. Use large simple readable pixel clusters for the face, eyes and clothing; frame the head prominently with chest in the lower part and a small black margin, so features remain identifiable at 34 pixels. Final image should visually resemble a native 64x64 sprite enlarged with nearest-neighbor pixels. No text, letters, numerals, logos, flags, watermark, border, UI, collage or other characters. A single complete standalone portrait, edge-to-edge square image. Do not add decorative scenery; any requested screen silhouettes must be extremely faint and keep the background mostly black.\nInput image role: STYLE REFERENCE ONLY, for coherent lighting, palette treatment, black backdrop and portrait framing across the cast. Generate a NEW portrait of the following person. Do not copy the reference man's face, age, hair or glasses.\nSubject for this single portrait: Chinese man, 42 years old, short buzz cut, greying temples, strong jaw, dark navy flight suit, blank mission patch silhouette on collar without text, calm steady expression.",
+      "styleReference": "qin original; style only"
+    },
+    {
+      "id": "amara",
+      "name": "阿玛拉·奥孔科",
+      "file": "src/assets/portraits/amara.png",
+      "prompt": "Use case: illustration-story. Asset type: individual game character portrait for the Chinese Mars mission narrative game 光速之隔, displayed at 84x84 and 34x34. Style: authentic restrained 64x64 pixel-grid art, square 1:1, bust shot, three-quarter view facing image right (except the explicitly back-view player), pure black background, limited palette of at most 24 colors, crisp hard-edged square pixels, no antialiasing, no blurred gradients. Cool white key light from upper left, thin signal red (#ff3b30) rim light on the right, sci-fi mission-control terminal aesthetic. Use large simple readable pixel clusters for the face, eyes and clothing; frame the head prominently with chest in the lower part and a small black margin, so features remain identifiable at 34 pixels. Final image should visually resemble a native 64x64 sprite enlarged with nearest-neighbor pixels. No text, letters, numerals, logos, flags, watermark, border, UI, collage or other characters. A single complete standalone portrait, edge-to-edge square image. Do not add decorative scenery; any requested screen silhouettes must be extremely faint and keep the background mostly black.\nInput image role: STYLE REFERENCE ONLY, for coherent lighting, palette treatment, black backdrop and portrait framing across the cast. Generate a NEW portrait of the following person. Do not copy the reference man's face, age, hair or glasses.\nSubject for this single portrait: Nigerian woman, 34 years old, dark skin, short curly hair, bright smile, orange coveralls with rolled sleeves, grease smudge on cheek, pen tucked behind ear.",
+      "styleReference": "qin original; style only"
+    },
+    {
+      "id": "andrei",
+      "name": "安德烈·沃尔科夫",
+      "file": "src/assets/portraits/andrei.png",
+      "prompt": "Use case: illustration-story. Asset type: individual game character portrait for the Chinese Mars mission narrative game 光速之隔, displayed at 84x84 and 34x34. Style: authentic restrained 64x64 pixel-grid art, square 1:1, bust shot, three-quarter view facing image right (except the explicitly back-view player), pure black background, limited palette of at most 24 colors, crisp hard-edged square pixels, no antialiasing, no blurred gradients. Cool white key light from upper left, thin signal red (#ff3b30) rim light on the right, sci-fi mission-control terminal aesthetic. Use large simple readable pixel clusters for the face, eyes and clothing; frame the head prominently with chest in the lower part and a small black margin, so features remain identifiable at 34 pixels. Final image should visually resemble a native 64x64 sprite enlarged with nearest-neighbor pixels. No text, letters, numerals, logos, flags, watermark, border, UI, collage or other characters. A single complete standalone portrait, edge-to-edge square image. Do not add decorative scenery; any requested screen silhouettes must be extremely faint and keep the background mostly black.\nInput image role: STYLE REFERENCE ONLY, for coherent lighting, palette treatment, black backdrop and portrait framing across the cast. Generate a NEW portrait of the following person. Do not copy the reference man's face, age, hair or glasses.\nSubject for this single portrait: Russian man, 45 years old, neatly trimmed full beard, tired but kind eyes, white medical vest over grey flight suit, small penlight clipped to chest.",
+      "styleReference": "qin original; style only"
+    },
+    {
+      "id": "rin",
+      "name": "早川凛",
+      "file": "src/assets/portraits/rin.png",
+      "prompt": "Use case: illustration-story. Asset type: individual game character portrait for the Chinese Mars mission narrative game 光速之隔, displayed at 84x84 and 34x34. Style: authentic restrained 64x64 pixel-grid art, square 1:1, bust shot, three-quarter view facing image right (except the explicitly back-view player), pure black background, limited palette of at most 24 colors, crisp hard-edged square pixels, no antialiasing, no blurred gradients. Cool white key light from upper left, thin signal red (#ff3b30) rim light on the right, sci-fi mission-control terminal aesthetic. Use large simple readable pixel clusters for the face, eyes and clothing; frame the head prominently with chest in the lower part and a small black margin, so features remain identifiable at 34 pixels. Final image should visually resemble a native 64x64 sprite enlarged with nearest-neighbor pixels. No text, letters, numerals, logos, flags, watermark, border, UI, collage or other characters. A single complete standalone portrait, edge-to-edge square image. Do not add decorative scenery; any requested screen silhouettes must be extremely faint and keep the background mostly black.\nInput image role: STYLE REFERENCE ONLY, for coherent lighting, palette treatment, black backdrop and portrait framing across the cast. Generate a NEW portrait of the following person. Do not copy the reference man's face, age, hair or glasses.\nSubject for this single portrait: Japanese woman, 31 years old, high ponytail, bright eager focused eyes, red Martian dust on cheek, holding up a transparent rock sample bag.",
+      "styleReference": "qin original; style only"
+    },
+    {
+      "id": "zhou",
+      "name": "周岚",
+      "file": "src/assets/portraits/zhou.png",
+      "prompt": "Use case: illustration-story. Asset type: individual game character portrait for the Chinese Mars mission narrative game 光速之隔, displayed at 84x84 and 34x34. Style: authentic restrained 64x64 pixel-grid art, square 1:1, bust shot, three-quarter view facing image right (except the explicitly back-view player), pure black background, limited palette of at most 24 colors, crisp hard-edged square pixels, no antialiasing, no blurred gradients. Cool white key light from upper left, thin signal red (#ff3b30) rim light on the right, sci-fi mission-control terminal aesthetic. Use large simple readable pixel clusters for the face, eyes and clothing; frame the head prominently with chest in the lower part and a small black margin, so features remain identifiable at 34 pixels. Final image should visually resemble a native 64x64 sprite enlarged with nearest-neighbor pixels. No text, letters, numerals, logos, flags, watermark, border, UI, collage or other characters. A single complete standalone portrait, edge-to-edge square image. Do not add decorative scenery; any requested screen silhouettes must be extremely faint and keep the background mostly black.\nInput image role: STYLE REFERENCE ONLY, for coherent lighting, palette treatment, black backdrop and portrait framing across the cast. Generate a NEW portrait of the following person. Do not copy the reference man's face, age, hair or glasses.\nSubject for this single portrait: Chinese woman, 50 years old, sharp short hair, dark grey business suit, arms crossed, stern and pressuring expression.",
+      "styleReference": "qin original; style only"
+    },
+    {
+      "id": "capcom",
+      "name": "许航",
+      "file": "src/assets/portraits/capcom.png",
+      "prompt": "Use case: illustration-story. Asset type: individual game character portrait for the Chinese Mars mission narrative game 光速之隔, displayed at 84x84 and 34x34. Style: authentic restrained 64x64 pixel-grid art, square 1:1, bust shot, three-quarter view facing image right (except the explicitly back-view player), pure black background, limited palette of at most 24 colors, crisp hard-edged square pixels, no antialiasing, no blurred gradients. Cool white key light from upper left, thin signal red (#ff3b30) rim light on the right, sci-fi mission-control terminal aesthetic. Use large simple readable pixel clusters for the face, eyes and clothing; frame the head prominently with chest in the lower part and a small black margin, so features remain identifiable at 34 pixels. Final image should visually resemble a native 64x64 sprite enlarged with nearest-neighbor pixels. No text, letters, numerals, logos, flags, watermark, border, UI, collage or other characters. A single complete standalone portrait, edge-to-edge square image. Do not add decorative scenery; any requested screen silhouettes must be extremely faint and keep the background mostly black.\nInput image role: STYLE REFERENCE ONLY, for coherent lighting, palette treatment, black backdrop and portrait framing across the cast. Generate a NEW portrait of the following person. Do not copy the reference man's face, age, hair or glasses.\nSubject for this single portrait: Chinese man, 28 years old, single-ear communications headset with boom microphone, light blue uniform shirt, focused on an implied screen, face lit by monitor glow.",
+      "styleReference": "qin original; style only"
+    },
+    {
+      "id": "you",
+      "name": "玩家背影",
+      "file": "src/assets/portraits/you.png",
+      "prompt": "Use case: illustration-story. Asset type: individual game character portrait for the Chinese Mars mission narrative game 光速之隔, displayed at 84x84 and 34x34. Style: authentic restrained 64x64 pixel-grid art, square 1:1, bust shot, three-quarter view facing image right (except the explicitly back-view player), pure black background, limited palette of at most 24 colors, crisp hard-edged square pixels, no antialiasing, no blurred gradients. Cool white key light from upper left, thin signal red (#ff3b30) rim light on the right, sci-fi mission-control terminal aesthetic. Use large simple readable pixel clusters for the face, eyes and clothing; frame the head prominently with chest in the lower part and a small black margin, so features remain identifiable at 34 pixels. Final image should visually resemble a native 64x64 sprite enlarged with nearest-neighbor pixels. No text, letters, numerals, logos, flags, watermark, border, UI, collage or other characters. A single complete standalone portrait, edge-to-edge square image. Do not add decorative scenery; any requested screen silhouettes must be extremely faint and keep the background mostly black.\nInput image role: STYLE REFERENCE ONLY, for coherent lighting, palette treatment, black backdrop and portrait framing across the cast. Generate a NEW portrait of the following person. Do not copy the reference man's face, age, hair or glasses.\nSubject for this single portrait: Back view only: a flight director seated at a control console facing a row of dim screens. Face MUST NOT be visible. Bust and shoulders from behind, dark flight-control uniform, readable silhouette.",
+      "styleReference": "qin original; style only"
+    }
+  ]
+}
