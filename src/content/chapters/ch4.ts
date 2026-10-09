@@ -38,6 +38,7 @@ export const ch4: Chapter = {
   title: '第四章 · 红土',
   subtitle: '火星表面 · 第 1–440 火星日',
   teach: '授权度：你愿意放手多少？',
+  march: '实事求是：断联之后，把判断交给看得见路的人。',
   scene: 'surface',
   beats: [
     {

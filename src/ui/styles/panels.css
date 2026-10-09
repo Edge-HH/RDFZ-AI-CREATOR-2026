@@ -73,6 +73,8 @@
 .title-box .en { font-family: var(--mono); letter-spacing: 0.42em; color: var(--dim); font-size: 11px; margin-top: 6px; }
 .title-box .pitch { color: var(--muted); margin: 22px auto 26px; max-width: 30em; }
 .title-box .pitch em { color: var(--text); font-style: normal; border-bottom: 1px solid var(--signal); }
+.title-box .dedication { margin: -10px auto 24px; font-size: 13px; color: var(--text); letter-spacing: 0.12em; }
+.title-box .dedication::before, .title-box .dedication::after { content: ''; display: inline-block; width: 18px; height: 1px; background: var(--signal); vertical-align: middle; margin: 0 10px; }
 .menu { display: grid; gap: 10px; max-width: 340px; margin: 0 auto; }
 .mode-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .foot-note { margin-top: 22px; font-size: 12px; color: var(--dim); }
@@ -82,6 +84,8 @@
 .chapter-card .k { font-family: var(--mono); color: var(--signal); letter-spacing: 0.34em; font-size: 13px; min-height: 1.6em; }
 .chapter-card h2 { font-size: clamp(30px, 6vw, 46px); margin: 8px 0; letter-spacing: 0.2em; font-weight: 600; }
 .chapter-card .sub { color: var(--muted); }
+.chapter-card .march { margin-top: 14px; color: var(--text); font-size: 15px; letter-spacing: 0.06em; }
+.chapter-card .march .code { display: block; color: var(--signal); font-family: var(--mono); font-size: 12px; letter-spacing: 0.3em; margin-bottom: 2px; }
 .chapter-card .teach { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 24px auto; padding: 12px 18px; color: var(--text); max-width: 520px; }
 .chapter-card .teach .code { color: var(--signal); }
 

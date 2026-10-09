@@ -47,6 +47,8 @@ const BOOT: [string, string?][] = [
   ['载入任务档案：祝融一号'],
 ];
 
+export const DEDICATION = '谨以此纪念中国工农红军长征胜利 90 周年（1936—2026）';
+
 const bootLine = ([a, b]: [string, string?]) => h('div', {}, a, b ? h('span.ok', {}, ` ${b}`) : null);
 
 export function titleScreen(opts: { hasSave: boolean; onNew: (mode: Mode) => void; onContinue: () => void; onArchive: () => void; onRules: () => void; onSettings: () => void }): HTMLElement {
@@ -62,6 +64,7 @@ export function titleScreen(opts: { hasSave: boolean; onNew: (mode: Mode) => voi
     h('h1', {}, '光速之隔'),
     h('div.en', {}, 'THE LIGHT-MINUTE GAP · 火星首航'),
     h('p.pitch', {}, '2035 年，人类第一次载人火星任务。你是地球上的飞控总师。', h('br'), '火星上的每一句话，传到你耳边都要', h('em', {}, '十几分钟'), '。', h('br'), '你看到的一切，都是过去。'),
+    h('p.dedication', {}, h('span', {}, DEDICATION.replace(/（.*$/, '')), h('span.yr', {}, '（1936—2026）')),
     h('div.menu', {},
       opts.hasSave ? h('button.btn.primary', { type: 'button', onclick: () => { o.remove(); opts.onContinue(); } }, svg(ICON.play), '继续任务') : null,
       h('div.mode-pick', {}, std, story),
@@ -108,6 +111,7 @@ export function chapterCard(ch: Chapter, onGo: () => void): void {
     k,
     h('h2', {}, name),
     h('div.sub', {}, ch.subtitle),
+    ch.march ? h('div.march', {}, h('span.code', {}, '征程'), ch.march) : null,
     h('div.teach.frame', {}, h('span.code', {}, 'NEW PROTOCOL'), svg(ICON.info), ch.teach),
     h('div', {}, h('button.btn.primary', { type: 'button', onclick: () => { clearInterval(t); o.remove(); onGo(); } }, svg(ICON.next), '开始'))));
 }
@@ -145,7 +149,7 @@ export function endingScreen(s: MissionState, ending: EndingId, newArchive: stri
       h('div.code', { style: 'margin-bottom:10px' }, 'MISSION REPORT · 任务结算'),
       h('div.grade', { 'aria-label': `评级 ${rating.grade}` }, rating.grade),
       h('h2', {}, e.title), h('div.epi', {}, e.epigraph)),
-    h('h4', {}, '征程'),
+    h('h4', {}, '征程 · 从长征到火星'),
     h('ol.journey', { 'aria-label': '征程时间线' }, journey(s, e.title, rating.grade).map((j) =>
       h('li', { class: j.kind }, h('span.y', {}, j.year), h('b', {}, j.title), h('span.n', {}, j.note)))),
     h('div.two-col', {},
@@ -194,6 +198,9 @@ export function rulesScreen(onClose: () => void): void {
   const sec = (title: string, ...ps: (string | HTMLElement)[]) => h('section', {}, h('h4', {}, title), ...ps.map((p) => (typeof p === 'string' ? h('p', {}, p) : p)));
   const o = overlay('overlay', h('div.sheet.narrow.rules', {},
     h('div.sheet-head', {}, h('div', {}, h('span.code', {}, 'PROTOCOL'), h('h2', {}, '玩法与依据'))),
+    sec('主题：长征，一程接一程', DEDICATION + '。',
+      '长征精神在本作里落在三件事上：接力——老总师把椅子交给你，你再把路交给下一批人；实事求是——遵义会议是在与远方断联时从实际出发做出的决定，正如光速延迟下，你只能把判断交给离现场最近的人；把人带回家——评级奖励信任与判断，而不是不计代价的硬扛。',
+      '每章开头的“征程”一句，对应这一章考验的那一面。'),
     sec('你是谁', '你是北京航天飞控中心的总师，指挥 2035 年首次载人火星任务“祝融一号”。四名乘员的命运，取决于你在序章与五个章节里做出的二十多个决定。'),
     sec('五维资源', '时间（发射窗口、返程窗口、日凌）、能源（发电与储能）、物资（氧、水、食物、备件）、人员（健康、士气、信任）、安全（系统完好度与累计辐射剂量）。资源跨章延续：第一章的配载会影响到返程那一天。'),
     sec('光速之隔', '火星上的消息都标注了“火星时间 T−xx”。风险判断显示为一个区间：延迟越久、预警设备越少，区间越宽。'),

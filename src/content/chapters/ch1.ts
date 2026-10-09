@@ -9,6 +9,7 @@ export const ch1: Chapter = {
   title: '第一章 · 窗口',
   subtitle: '发射前 40 天 · 海南文昌',
   teach: '取舍：十二个槽位，永远不够',
+  march: '出发：红军不怕远征难。远征之前，先把行囊装对。',
   scene: 'orbit',
   beats: [
     {

@@ -69,6 +69,7 @@ export interface Chapter {
   title: string;
   subtitle: string;
   teach: string; // 本章新教的机制
+  march?: string; // 本章呼应的长征精神，显示在章节卡上
   scene?: SceneCue;
   beats: Beat[];
 }

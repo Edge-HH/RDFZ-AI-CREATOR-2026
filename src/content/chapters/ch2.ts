@@ -10,6 +10,7 @@ export const ch2: Chapter = {
   title: '第二章 · 深空',
   subtitle: '地火转移轨道 · 第 1–259 天',
   teach: '风险判断：你手里的信息，永远是旧的',
+  march: '跋涉：万水千山，靠的是彼此。',
   scene: 'cruise',
   beats: [
     {

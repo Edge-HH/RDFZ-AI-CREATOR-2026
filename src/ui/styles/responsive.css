@@ -52,6 +52,8 @@
 }
 
 @media (max-width: 420px) {
+  .title-box .dedication::before, .title-box .dedication::after { display: none; }
+  .title-box .dedication .yr { display: block; }
   .mode-pick { grid-template-columns: 1fr; }
   .crew-list { grid-template-columns: 1fr; }
 }

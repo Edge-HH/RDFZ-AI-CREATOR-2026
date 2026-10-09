@@ -30,6 +30,7 @@ export const ch5: Chapter = {
   title: '第五章 · 归途',
   subtitle: '火星表面 · 返程窗口前 5 天',
   teach: '最终抉择：带谁、带什么回家',
+  march: '归途：把每一个人带回家，再把路交给后来人。',
   scene: 'ascent',
   beats: [
     {

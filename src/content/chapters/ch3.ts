@@ -29,6 +29,7 @@ export const ch3: Chapter = {
   title: '第三章 · 恐怖七分钟',
   subtitle: '火星大气层外 125 公里 · 进入前 6 小时',
   teach: '预案卡：在失去联系之前，把要说的话说完',
+  march: '信任：看不见的时候，靠事先说好的话。',
   scene: 'edl',
   beats: [
     {
