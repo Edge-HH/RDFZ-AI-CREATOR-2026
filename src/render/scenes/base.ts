@@ -3,6 +3,7 @@ import type { MissionState } from '../../core/types';
 import { HOLO_RED, HOLO_WHITE, holoLabel, holoRing } from '../holo';
 import { solarCellTexture } from '../textures';
 import { glow, type Mats } from './common';
+import { landerModel, mavModel } from './craft';
 
 // 基地布局（以主居住舱为原点，单位约为米）。笨笨的巡检线 z = -11 避开下列所有模块，见 benben.ts
 export const LAYOUT = {
@@ -201,43 +202,8 @@ export function buildBase(s: MissionState, m: Mats, add: Add, sunAz: number, tie
     rig.add(drillBit);
     add(rig, LAYOUT.drill[0], LAYOUT.drill[1]);
   }
-  // 火星上升器：分级箭体 + 发射台
-  const mav = new THREE.Group();
-  mav.name = 'mav';
-  const pad = new THREE.Mesh(new THREE.CylinderGeometry(6, 6.5, 0.6, 32), new THREE.MeshStandardMaterial({ color: '#5b5650', roughness: 0.95 }));
-  pad.position.y = 0.3;
-  pad.name = 'pad';
-  const rocket = new THREE.Group();
-  rocket.name = 'rocket';
-  const stage1 = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.4, 11, 32), m.white);
-  stage1.position.y = 6.5;
-  const band = new THREE.Mesh(new THREE.CylinderGeometry(2.25, 2.25, 0.6, 32), m.dark);
-  band.position.y = 11.5;
-  const stage2 = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 2.2, 5, 32), m.white);
-  stage2.position.y = 14.5;
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(1.9, 4.5, 32), m.white);
-  nose.position.y = 19.2;
-  rocket.add(stage1, band, stage2, nose);
-  for (let i = 0; i < 4; i++) {
-    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3, 1.8), m.dark);
-    fin.position.set(Math.cos(a) * 2.4, 2.4, Math.sin(a) * 2.4);
-    fin.rotation.y = -a;
-    rocket.add(fin);
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 3.4, 8), m.metal);
-    leg.position.set(Math.cos(a) * 3, 1.2, Math.sin(a) * 3);
-    leg.rotation.set(Math.sin(a) * 0.4, 0, -Math.cos(a) * 0.4);
-    rocket.add(leg);
-  }
-  const bells = new THREE.Group();
-  for (const [x, z] of [[0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]]) {
-    const b = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.2, 16, 1, true), m.nozzle);
-    b.position.set(x, 0.5, z);
-    bells.add(b);
-  }
-  rocket.add(bells);
-  rocket.position.y = 0.6;
-  mav.add(pad, rocket);
+  // 火星上升器：两级箭体 + 发射台、服务塔、脐带臂、推进剂储罐（模型见 craft.ts）
+  const { group: mav, rocket } = mavModel(m);
   add(mav, LAYOUT.mav[0], LAYOUT.mav[1]);
   label(rocket, 'MAV', '火星上升器', 23);
   // 着陆器停在基地旁（着陆后保留）
@@ -262,33 +228,4 @@ export function buildBase(s: MissionState, m: Mats, add: Add, sunAz: number, tie
   }
   if (tier === 'high') group.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return { group, windows, beacons, panels, drillBit, labels };
-}
-
-// 着陆器：八角形下降级（金色隔热毯）+ 白色乘员舱 + 四条带缓冲器的腿 + 四台下降发动机
-export function landerModel(m: Mats): THREE.Group {
-  const g = new THREE.Group();
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.8, 2.6, 8), m.foil);
-  base.position.y = 3.4;
-  const cabin = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.5, 3.2, 24), m.white);
-  cabin.position.y = 6.3;
-  const top = new THREE.Mesh(new THREE.SphereGeometry(2.1, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), m.white);
-  top.position.y = 7.9;
-  const win = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.1), m.windowWarm);
-  win.position.set(0, 6.8, 2.38);
-  g.add(base, cabin, top, win);
-  for (let i = 0; i < 4; i++) {
-    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 4.2, 8), m.metal);
-    strut.position.set(Math.cos(a) * 3.9, 1.9, Math.sin(a) * 3.9);
-    strut.rotation.set(Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5);
-    const damper = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 1.2, 8), m.dark);
-    damper.position.copy(strut.position);
-    damper.rotation.copy(strut.rotation);
-    const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.9, 0.2, 14), m.dark);
-    pad.position.set(Math.cos(a) * 4.9, 0.1, Math.sin(a) * 4.9);
-    const bellM = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.1, 16, 1, true), m.nozzle);
-    bellM.position.set(Math.cos(a) * 1.8, 1.7, Math.sin(a) * 1.8);
-    g.add(strut, damper, pad, bellM);
-  }
-  return g;
 }

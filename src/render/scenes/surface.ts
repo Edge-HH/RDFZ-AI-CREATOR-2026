@@ -6,11 +6,40 @@ import type { Shot } from '../director';
 import { HOLO_RED, HoloArc, holoLabel, holoRing } from '../holo';
 import { fbm3, mulberry, ridged3 } from '../noise';
 import { dustWallTexture, noiseNormal, puffTexture } from '../textures';
-import { benbenModel, patrolBenben, type Benben } from './benben';
-import { buildBase, landerModel, LAYOUT, type BaseParts } from './base';
+import { benbenModel, benbenTracks, patrolBenben, type Benben } from './benben';
+import { buildBase, LAYOUT, type BaseParts } from './base';
 import { disposeTree, glow, makeMats, useEnv, type Mats, type SceneCtx, type SceneModule } from './common';
+import { landerModel } from './craft';
 
 const SUN = new THREE.Vector3(0.55, 0.42, -0.72).normalize();
+const sstep = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+// 深色玄武岩沙丘带的分布（0~1）：大尺度噪声决定哪里有沙丘
+const duneMask = (x: number, z: number) => sstep(0.54, 0.64, fbm3(x * 0.0035 + 11, 2, z * 0.0035, 3, 61));
+
+// 岩石：噪声起伏的二十面体，底部压平便于半埋；顶面积尘（顶点色），每个面平面着色
+function rockGeo(seed: number, detail: number): THREE.BufferGeometry {
+  const g = new THREE.IcosahedronGeometry(1, detail);
+  const pos = g.getAttribute('position') as THREE.BufferAttribute;
+  const col = new Float32Array(pos.count * 3);
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).normalize();
+    const n = fbm3(v.x * 1.6 + seed, v.y * 1.6, v.z * 1.6 - seed, 3, seed);
+    const r = 0.7 + n * 0.55 + ridged3(v.x * 2.4, v.y * 2.4 + seed, v.z * 2.4, 2, seed + 3) * 0.2;
+    const up = v.y;
+    v.multiplyScalar(r);
+    if (v.y < -0.2) v.y = -0.2 + (v.y + 0.2) * 0.35;
+    pos.setXYZ(i, v.x, v.y, v.z);
+    const dust = sstep(0.3, 0.85, up), shade = 0.75 + n * 0.45;
+    col.set([shade * (1 + dust * 0.55), shade * (1 + dust * 0.3), shade * (1 + dust * 0.12)], i * 3);
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  return g;
+}
+
+const ROCK_TINTS = ['#5a3828', '#4a2e22', '#6b4330', '#3a2722', '#76503a'].map((c) => new THREE.Color(c));
 
 // 地面细节：灰度碎石、裂纹与风纹（与顶点色相乘，不改变整体色调）
 function groundDetail(size: number): THREE.Texture {
@@ -204,7 +233,7 @@ export class SurfaceScene implements SceneModule {
     if (this.terrain) { this.scene.remove(this.terrain); this.terrain.geometry.dispose(); (this.terrain.material as THREE.Material).dispose(); }
     const site = siteById(siteId)!;
     const size = 1000;
-    const seg = this.ctx.tier === 'high' ? 280 : this.ctx.tier === 'medium' ? 180 : 100;
+    const seg = this.ctx.tier === 'high' ? 240 :this.ctx.tier === 'medium' ? 180 : 100;
     const geo = new THREE.PlaneGeometry(size, size, seg, seg);
     geo.rotateX(-Math.PI / 2);
     const prof = site.profile;
@@ -223,6 +252,12 @@ export class SurfaceScene implements SceneModule {
         const d = Math.hypot(x - c.x, z - c.z) / c.rad;
         if (d < 1.4) h += d < 1 ? -(1 - d * d) * c.rad * 0.18 : (1.4 - d) * c.rad * 0.1;
       }
+      // 沙丘：横向沙脊，迎风坡缓、背风坡陡
+      const dm = duneMask(x, z);
+      if (dm > 0) {
+        const ph = (x * 0.85 + z * 0.53) * 0.12 + fbm3(x * 0.015, 4, z * 0.015, 2, 63) * 5;
+        h += (0.5 + 0.5 * Math.sin(ph + 0.6 * Math.sin(ph))) ** 3 * 2.8 * dm;
+      }
       const flat = Math.min(1, Math.hypot(x, z) / 75);
       return h * flat * flat;
     };
@@ -232,7 +267,7 @@ export class SurfaceScene implements SceneModule {
     // 顶点色：按高度、坡度与噪声混合玄武岩、土壤、亮色尘土
     const nrm = geo.getAttribute('normal') as THREE.BufferAttribute;
     const colors = new Float32Array(pos.count * 3);
-    const basalt = new THREE.Color('#4b3024'), soil = new THREE.Color('#8b5a3a'), dust = new THREE.Color('#b8875e'), bright = new THREE.Color('#c99f76'), ice = new THREE.Color('#d8c8bc');
+    const darkSand = new THREE.Color('#3b2620'), basalt = new THREE.Color('#4b3024'), soil = new THREE.Color('#8b5a3a'), dust = new THREE.Color('#b8875e'), bright = new THREE.Color('#c99f76'), ice = new THREE.Color('#d8c8bc');
     const c = new THREE.Color();
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i), z = pos.getZ(i);
@@ -242,6 +277,7 @@ export class SurfaceScene implements SceneModule {
       c.lerp(bright, Math.max(0, n - 0.62) * 1.6);
       c.lerp(basalt, Math.min(1, slope * 4.5 + Math.max(0, 0.36 - n) * 0.6));
       if (siteId === 'arcadia') c.lerp(ice, Math.max(0, n - 0.6) * 0.7);
+      c.lerp(darkSand, duneMask(x, z) * 0.6);
       colors.set([c.r, c.g, c.b], i * 3);
     }
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
@@ -250,6 +286,14 @@ export class SurfaceScene implements SceneModule {
     const normal = this.ctx.tier === 'low' ? null : noiseNormal(256, 4, 3.5, 31);
     normal?.repeat.set(60, 60);
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, map: detail, normalMap: normal ?? undefined, normalScale: new THREE.Vector2(0.7, 0.7), roughness: 0.96, metalness: 0 });
+    // 打破平铺重复：同一张细节贴图再按约 7 倍尺度采样一次，作为大块明暗调制
+    mat.onBeforeCompile = (sh) => {
+      sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#ifdef USE_MAP
+        vec4 texA = texture2D(map, vMapUv);
+        vec4 texB = texture2D(map, vMapUv * 0.131 + vec2(0.37, 0.61));
+        diffuseColor *= texA * (0.55 + texB * 0.9);
+      #endif`);
+    };
     this.terrain = new THREE.Mesh(geo, mat);
     this.terrain.receiveShadow = this.ctx.tier === 'high';
     this.scene.add(this.terrain);
@@ -261,34 +305,82 @@ export class SurfaceScene implements SceneModule {
     disposeTree(this.scenery);
     this.scenery.clear();
     const r = mulberry(siteId.length * 131 + 7);
-    const count = this.ctx.tier === 'high' ? 800 : this.ctx.tier === 'medium' ? 480 : 220;
-    const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: '#5a3828', roughness: 0.92, flatShading: true }), count);
-    const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), p = new THREE.Vector3();
+    const tier = this.ctx.tier;
+    // 基地设施周围不放岩石（含笨笨的巡检线）
+    const zones: [readonly number[], number][] = [[LAYOUT.mav, 11], [LAYOUT.lander, 7], [LAYOUT.reactor, 5], [LAYOUT.drill, 4], [LAYOUT.greenhouse, 7], [LAYOUT.rover, 5], [LAYOUT.mast, 2]];
+    // 低机位的运镜路线（见 shots）两侧也不放，免得岩石挡住镜头
+    const paths = [[16, 26, -6, 24], [-17, 15, -10, 12], [-42, 40, -34, 32], [-40, 56, -34, 50], [-48, 54, -40, 46], [-52, 42, -46, 37]];
+    const nearPath = (x: number, z: number) => paths.some(([ax, az, bx, bz]) => {
+      const t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / ((bx - ax) ** 2 + (bz - az) ** 2)));
+      return Math.hypot(x - ax - t * (bx - ax), z - az - t * (bz - az)) < 7;
+    });
+    const keepOut = (x: number, z: number) => Math.hypot(x, z) < 16 || (x > -36 && x < 13 && z > -35 && z < -15) || (Math.abs(z + 11) < 3 && x > -22 && x < 14)
+      || zones.some(([[px, pz], rad]) => Math.hypot(x - px, z - pz) < rad) || nearPath(x, z);
     const density = siteId === 'jezero' ? 1.6 : siteId === 'arcadia' ? 0.6 : 1;
-    let n = 0;
-    for (let i = 0; i < count; i++) {
-      const ang = r() * Math.PI * 2, dist = 18 + Math.pow(r(), 0.7) * 400;
+    const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), p = new THREE.Vector3(), tint = new THREE.Color();
+    const rockMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92 });
+    // 岩石：近处三种细分外形（高画质投影），远处一种低面数外形；每块随机色调，少数是半埋的大石块
+    const nearN = tier === 'high' ? 260 : tier === 'medium' ? 180 : 100, farN = tier === 'high' ? 320 : tier === 'medium' ? 240 : 120;
+    const near = [0, 1, 2].map((i) => new THREE.InstancedMesh(rockGeo(siteId.length * 13 + i * 7, tier === 'low' ? 0 : 1), rockMat, Math.ceil(nearN / 3)));
+    const far = new THREE.InstancedMesh(rockGeo(siteId.length * 13 + 21, 0), rockMat, farN);
+    const meshes = [...near, far], used = [0, 0, 0, 0];
+    for (let i = 0; i < nearN * 1.5 + farN * 1.5; i++) {
+      const isNear = i < nearN * 1.5, k = isNear ? i % 3 : 3;
+      const ang = r() * Math.PI * 2, dist = isNear ? 17 + Math.pow(r(), 0.8) * 100 : 117 + Math.pow(r(), 0.8) * 300;
       const x = Math.cos(ang) * dist, z = Math.sin(ang) * dist;
-      if (r() > density * 0.75) continue;
-      if (Math.abs(z - (-11)) < 3 && x > -22 && x < 14) continue; // 不挡笨笨的巡检线
-      const s = (0.2 + Math.pow(r(), 3) * 2.8) * (siteId === 'jezero' ? 1.3 : 1);
-      p.set(x, this.heightAt(x, z) + s * 0.2, z);
-      q.setFromEuler(e.set(r() * 3, r() * 3, r() * 3));
-      sc.set(s * (0.8 + r() * 0.7), s * (0.35 + r() * 0.45), s * (0.7 + r() * 0.6));
-      rocks.setMatrixAt(n++, mtx.compose(p, q, sc));
+      if (r() > density * 0.75 || keepOut(x, z) || used[k] >= meshes[k].instanceMatrix.count) continue;
+      const big = r() < (isNear ? 0.05 : 0.1);
+      const s = (big ? 2.2 + r() * 2.6 : 0.25 + Math.pow(r(), 2.5) * 2.2) * (siteId === 'jezero' ? 1.3 : 1);
+      p.set(x, this.heightAt(x, z) - s * (big ? 0.25 : 0.08), z);
+      q.setFromEuler(e.set((r() - 0.5) * 0.5, r() * Math.PI * 2, (r() - 0.5) * 0.5));
+      sc.set(s * (0.8 + r() * 0.6), s * (0.45 + r() * 0.45), s * (0.7 + r() * 0.6));
+      meshes[k].setMatrixAt(used[k], mtx.compose(p, q, sc));
+      meshes[k].setColorAt(used[k]++, tint.copy(ROCK_TINTS[Math.floor(r() * ROCK_TINTS.length)]).multiplyScalar(0.85 + r() * 0.3));
     }
-    rocks.count = n;
-    rocks.castShadow = rocks.receiveShadow = this.ctx.tier === 'high';
-    this.scenery.add(rocks);
-    const mesaMat = new THREE.MeshStandardMaterial({ color: '#86563a', roughness: 1, flatShading: true });
+    meshes.forEach((m, k) => {
+      m.count = used[k];
+      m.castShadow = k < 3 && tier === 'high'; // 阴影相机只覆盖营地周围 ±110 m，远处岩石不投影
+      m.receiveShadow = tier === 'high';
+      this.scenery.add(m);
+    });
+    // 碎石：营地周围上千颗小石子（不投影，避开巡检线和发射台）
+    const pebN = tier === 'high' ? 1800 : tier === 'medium' ? 1200 : 500;
+    const pebbles = new THREE.InstancedMesh(rockGeo(siteId.length * 17 + 5, 0), rockMat, pebN);
+    let pn = 0;
+    for (let i = 0; i < pebN; i++) {
+      const ang = r() * Math.PI * 2, dist = 3 + Math.pow(r(), 1.5) * 90;
+      const x = Math.cos(ang) * dist, z = Math.sin(ang) * dist;
+      if ((Math.abs(z + 11) < 1.3 && x > -21 && x < 13) || Math.hypot(x - LAYOUT.mav[0], z - LAYOUT.mav[1]) < 7.5) continue;
+      const s = 0.03 + Math.pow(r(), 3) * 0.22;
+      p.set(x, this.heightAt(x, z) + s * 0.05, z);
+      q.setFromEuler(e.set(r() * 3, r() * 3, r() * 3));
+      pebbles.setMatrixAt(pn, mtx.compose(p, q, sc.set(s, s * 0.7, s * (0.8 + r() * 0.4))));
+      pebbles.setColorAt(pn++, tint.copy(ROCK_TINTS[Math.floor(r() * ROCK_TINTS.length)]));
+    }
+    pebbles.count = pn;
+    pebbles.receiveShadow = tier === 'high';
+    this.scenery.add(pebbles);
+    // 远处台地：侵蚀的轮廓、上部收进一级台阶、水平沉积层理（顶点色）
+    const mesaMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true });
     const mesas = siteId === 'jezero' ? 22 : 14;
+    const lo = new THREE.Color('#6a412b'), hi = new THREE.Color('#a26c47'), col = new THREE.Color();
     for (let i = 0; i < mesas; i++) {
       const ang = (i / mesas) * Math.PI * 2 + r() * 0.3;
       const dist = 480 + r() * 300;
       const w = 50 + r() * 140, h = (siteId === 'jezero' ? 45 : 18) + r() * 30;
-      const geo = new THREE.CylinderGeometry(w * (0.55 + r() * 0.2), w, h, 7 + Math.floor(r() * 4), 2);
+      const geo = new THREE.CylinderGeometry(w * (0.55 + r() * 0.2), w, h, 22, 6);
       const gp = geo.getAttribute('position') as THREE.BufferAttribute;
-      for (let k = 0; k < gp.count; k++) gp.setXYZ(k, gp.getX(k) * (0.85 + r() * 0.3), gp.getY(k), gp.getZ(k) * (0.85 + r() * 0.3));
+      const colors = new Float32Array(gp.count * 3);
+      for (let k = 0; k < gp.count; k++) {
+        const x = gp.getX(k), y = gp.getY(k), z = gp.getZ(k);
+        const yn = y / h + 0.5, a = Math.atan2(z, x);
+        const n = fbm3(Math.cos(a) * 1.5 + i * 7, yn * 2, Math.sin(a) * 1.5, 3, 40);
+        const f = Math.hypot(x, z) > 1e-3 ? (0.78 + n * 0.45) * (yn > 0.6 ? 0.92 : 1) : 1;
+        gp.setXYZ(k, x * f, y, z * f);
+        col.copy(lo).lerp(hi, Math.min(1, 0.25 + yn * 0.35 + (0.5 + 0.5 * Math.sin(yn * 23 + n * 4)) * 0.4));
+        colors.set([col.r, col.g, col.b], k * 3);
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
       geo.computeVertexNormals();
       const mesa = new THREE.Mesh(geo, mesaMat);
       mesa.position.set(Math.cos(ang) * dist, h / 2 - 8, Math.sin(ang) * dist);
@@ -312,6 +404,15 @@ export class SurfaceScene implements SceneModule {
     this.baseRoot.add(this.base.group);
     this.benben = benbenModel();
     add(this.benben.body, -4, -11);
+    this.baseRoot.add(benbenTracks(this.heightAt));
+    // 高画质：基地模块接收阴影；尺寸够大的不透明零件才投射阴影（省掉舷窗等小件的阴影绘制）
+    if (this.ctx.tier === 'high') this.baseRoot.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh || (mesh.material as THREE.Material).transparent) return;
+      if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
+      mesh.receiveShadow = true;
+      mesh.castShadow = mesh.geometry.boundingSphere!.radius > 0.6;
+    });
   }
 
   shots(cue: SceneCue): Shot[] {
@@ -422,6 +523,9 @@ export class SurfaceScene implements SceneModule {
     const T = this.launching ? t - this.t0 : -1;
     const lit = T >= 0;
     this.mavPlume.visible = this.mavGlow.visible = lit && this.cue === 'ascent';
+    // 脐带臂：点火后绕服务塔摆开
+    const arm = this.baseRoot.getObjectByName('umbilical');
+    if (arm) arm.rotation.y = arm.userData.rest + (lit ? Math.min(1, T / 1.2) ** 2 * 1.3 : 0);
     if (!rocket) return;
     const lift = T > 1.5 ? 3 * (T - 1.5) ** 2 : 0;
     rocket.position.y = 0.6 + lift;
