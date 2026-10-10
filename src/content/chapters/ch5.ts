@@ -20,7 +20,7 @@ function finalLines(s: MissionState): Line[] {
   if (stayed) out.push(L(stayed.id, '（火星，延迟 14 分钟）替我看看海。下一个窗口见。', { tone: 'warm' }));
   const lost = s.crew.filter((c) => c.status === 'lost');
   for (const c of lost) out.push(L('sys', `${CAST[c.id].name}的名字，被刻在了着陆点的一块石头上。`, { tone: 'cold' }));
-  out.push(L('ai', '任务日志归档完毕。550A-Preview 工程样机测试结束。'), L('ai', '测试结论：建议转入正式型号研制。'));
+  if (s.loadout.includes('qc550a')) out.push(L('sys', '550A-Preview 推演单元随返回舱回收。样机测试结论：建议转入正式型号研制。', { tone: 'calm' }));
   out.push(L('sys', '下一个地火窗口：26 个月后。第二批乘组已在训练。', { tone: 'calm' }));
   return out;
 }

@@ -7,10 +7,11 @@ import { Game } from '../src/core/flow';
 import { rngNext, seedFrom } from '../src/core/rng';
 import { ARRIVAL_DAY, RETURN_DAY } from '../src/core/orbit';
 import { ARCHIVE } from '../src/content/archive';
-import { MODULES } from '../src/content/modules';
+import { MODULES, moduleById } from '../src/content/modules';
+import { rates as computeRates } from '../src/core/rates';
 import { PRESETS } from '../src/content/presets';
 import { journey } from '../src/content/journey';
-import { createState } from '../src/core/state';
+import { applyLoadout, createState } from '../src/core/state';
 
 const ENDING_IDS = ['triumph', 'safe', 'stayed', 'cost', 'abort', 'silent', 'letgo'];
 
@@ -105,9 +106,17 @@ describe('致敬彩蛋（《流浪地球》）', () => {
   test('所有台词的发言者都在角色表里', () => {
     for (const lines of runs) for (const l of lines) expect(CAST[l.speaker]).toBeDefined();
   });
-  test('550A-Preview 每局都会在频道里发言', () => {
-    expect(CAST.ai.name).toBe('550A-Preview');
-    for (const lines of runs) expect(lines.some((l) => l.speaker === 'ai')).toBe(true);
+  test('550A-Preview 是科研道具，不在角色表里', () => {
+    expect(Object.values(CAST).some((c) => c.name.includes('550A'))).toBe(false);
+    const m = moduleById('qc550a')!;
+    expect(m.group).toBe('科研');
+    expect(m.scienceMult).toBeGreaterThan(0);
+  });
+  test('装上 550A-Preview 推演单元后科研倍率更高', () => {
+    const base = createState(1, 'standard');
+    const without = computeRates(applyLoadout(base, ['fission', 'lab']));
+    const withQc = computeRates(applyLoadout(base, ['fission', 'lab', 'qc550a']));
+    expect(withQc.scienceMult).toBeGreaterThan(without.scienceMult);
   });
   test('走到火星地表的对局里都能见到笨笨', () => {
     const surface = runs.filter((lines) => lines.some((l) => l.text.includes('火星日')));

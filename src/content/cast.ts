@@ -24,9 +24,6 @@ export const CAST: Record<Speaker, CastMember> = {
   zhou: { name: '周岚', role: '工程总体部副主任', callsign: '总体部', color: '#9aa3b5', glyph: '周', onMars: false,
     bio: '50 岁，管预算，也管压力。' },
   capcom: { name: '许航', role: '通信调度', callsign: 'CAPCOM', color: '#7fd1ff', glyph: '许', onMars: false },
-  // 致敬《流浪地球》：550 系列量子计算机的“预览版”，2035 年时正式型号还在图纸上
-  ai: { name: '550A-Preview', role: '量子计算工程样机', callsign: '推演', color: '#ff3b2f', glyph: '◉', onMars: false,
-    bio: '联合计算中心借调来的工程样机，负责轨道与风险推演。' },
   sys: { name: '系统', role: '遥测', callsign: 'SYS', color: '#e04f3a', glyph: '◆', onMars: false },
   you: { name: '你', role: '飞控总师', callsign: '总师', color: '#e8e8e8', glyph: '你', onMars: false },
 };

@@ -77,6 +77,10 @@ export const MODULES: ModuleDef[] = [
   { id: 'drone', name: '侦察直升机', slots: 1, group: '科研', scienceMult: 0.1, safety: -0.04,
     desc: '先飞后走：降低出舱与着陆风险，科研 +10%。',
     basis: '机智号在火星完成了 72 次飞行（2021–2024）。', archive: 'ingenuity' },
+  // 致敬《流浪地球》：550 系列量子计算机的“预览版”，作为道具随船上火星，不参与对话
+  { id: 'qc550a', name: '550A-Preview 推演单元', slots: 1, group: '科研', scienceMult: 0.25, drawKW: 1.5,
+    desc: '借来的量子计算工程样机，在现场筛选样本、规划考察路线，不必等地球回话。科研产出 +25%。',
+    basis: '好奇号与毅力号的 AEGIS 软件可以自主挑选岩石目标，不用等待地面指令。' },
 ];
 
 export const moduleById = (id: string) => MODULES.find((m) => m.id === id);

@@ -11,16 +11,7 @@ for (const [path, url] of Object.entries(files)) {
 
 const cache = new Map<Speaker, string>();
 
-// 550A-Preview：黑色面板上的一只红色“眼睛”
-const EYE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-<defs><radialGradient id="e"><stop offset="0" stop-color="#ffe3dc"/><stop offset="0.3" stop-color="#ff3b2f"/><stop offset="1" stop-color="#4a0805"/></radialGradient></defs>
-<rect width="64" height="64" rx="12" fill="#07090d"/>
-<circle cx="32" cy="32" r="21" fill="#140403" stroke="#3a3f48" stroke-width="3"/>
-<circle cx="32" cy="32" r="13" fill="url(#e)"/>
-</svg>`;
-
 function badge(id: Speaker): string {
-  if (id === 'ai') return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(EYE)}`;
   const c = CAST[id];
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
 <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c.color}" stop-opacity="0.95"/><stop offset="1" stop-color="#0b111b"/></linearGradient></defs>

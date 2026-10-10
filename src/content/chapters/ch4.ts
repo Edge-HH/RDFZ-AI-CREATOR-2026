@@ -315,7 +315,6 @@ export const ch4: Chapter = {
         return {
           state: r.state,
           lines: [L('sys', '— 日凌 · 通信中断 15 天 —', { tone: 'cold' }), ...r.lines,
-            L('ai', '日凌期间乘组的处置，与本机推演的最优解不完全一致。'),
             L('capcom', '信号恢复。他们还在。', { tone: 'warm' })],
         };
       },
