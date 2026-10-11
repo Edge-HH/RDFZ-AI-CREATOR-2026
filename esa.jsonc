@@ -1,0 +1,9 @@
+// 阿里云 ESA Pages 构建配置：存在本文件时，控制台里的构建设置会被忽略
+{
+  "name": "light-gap-mars",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "assets": {
+    "directory": "./dist"
+  }
+}
